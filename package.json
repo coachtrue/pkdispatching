@@ -1,0 +1,15 @@
+{
+  "name": "pk-dispatching",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Landing page and carrier intake for PK Dispatching, a freight dispatch service.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED"
+}
