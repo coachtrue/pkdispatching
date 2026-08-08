@@ -29,10 +29,10 @@ const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, 'data');
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 const NOTIFY_WEBHOOK = process.env.NOTIFY_WEBHOOK || '';
 
-const MAX_JSON_BYTES = 256 * 1024;          // 256 KB
-const MAX_UPLOAD_BYTES = 120 * 1024 * 1024; // 120 MB per submission
-const MAX_FILE_BYTES = 15 * 1024 * 1024;    // 15 MB per file (matches the UI)
+const MAX_JSON_BYTES = 512 * 1024;       // 512 KB of form fields
+const MAX_FILE_BYTES = 4 * 1024 * 1024;  // 4 MB per file (matches the UI and Vercel's body cap)
 const ALLOWED_EXTENSIONS = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.heic', '.webp', '.doc', '.docx']);
+const CATEGORIES = new Set(['authority', 'insurance', 'w9', 'noa', 'cdl', 'other']);
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -82,11 +82,17 @@ function readBody(req, limit) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let size = 0;
+    let overflowed = false;
     req.on('data', (chunk) => {
+      if (overflowed) return;
       size += chunk.length;
       if (size > limit) {
+        // Stop buffering but leave the socket alive long enough to send a
+        // real 413 — destroying it here would surface as a network error.
+        overflowed = true;
+        chunks.length = 0;
+        req.pause();
         reject(Object.assign(new Error('Payload too large'), { statusCode: 413 }));
-        req.destroy();
         return;
       }
       chunks.push(chunk);
@@ -112,51 +118,6 @@ async function notify(summary) {
   } catch (err) {
     console.error('[notify] webhook failed:', err.message);
   }
-}
-
-/* ------------------------------------------------------------------ *
- * multipart/form-data parser
- * ------------------------------------------------------------------ */
-
-function parseMultipart(buffer, boundary) {
-  const fields = Object.create(null);
-  const files = [];
-
-  const delimiter = Buffer.from(`--${boundary}`);
-  const parts = [];
-  let position = buffer.indexOf(delimiter);
-
-  while (position !== -1) {
-    const start = position + delimiter.length;
-    // Trailing "--" marks the final boundary.
-    if (buffer.slice(start, start + 2).toString() === '--') break;
-    const next = buffer.indexOf(delimiter, start);
-    if (next === -1) break;
-    // Skip the CRLF after the boundary and drop the CRLF before the next one.
-    parts.push(buffer.slice(start + 2, next - 2));
-    position = next;
-  }
-
-  for (const part of parts) {
-    const headerEnd = part.indexOf('\r\n\r\n');
-    if (headerEnd === -1) continue;
-
-    const headers = part.slice(0, headerEnd).toString('utf8');
-    const content = part.slice(headerEnd + 4);
-
-    const nameMatch = /name="([^"]*)"/i.exec(headers);
-    if (!nameMatch) continue;
-    const name = nameMatch[1];
-    const filenameMatch = /filename="([^"]*)"/i.exec(headers);
-
-    if (filenameMatch && filenameMatch[1]) {
-      files.push({ field: name, filename: filenameMatch[1], data: content });
-    } else {
-      fields[name] = content.toString('utf8');
-    }
-  }
-
-  return { fields, files };
 }
 
 /* ------------------------------------------------------------------ *
@@ -210,15 +171,63 @@ async function handleLead(req, res) {
  * Route: POST /api/onboarding
  * ------------------------------------------------------------------ */
 
-async function handleOnboarding(req, res) {
-  const contentType = req.headers['content-type'] || '';
-  const boundaryMatch = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(contentType);
-  if (!boundaryMatch) {
-    return sendJson(res, 400, { error: 'Expected multipart/form-data.' });
+/**
+ * POST /api/upload?name=&category=&reference= — one raw file per request.
+ * Mirrors the Vercel function so local and production behave identically;
+ * here the bytes land on disk instead of in Vercel Blob.
+ */
+async function handleUpload(req, res, url) {
+  const rawName = url.searchParams.get('name') || 'document';
+  const category = url.searchParams.get('category') || 'other';
+
+  if (!CATEGORIES.has(category)) {
+    return sendJson(res, 400, { error: 'Unknown document category.' });
   }
 
-  const raw = await readBody(req, MAX_UPLOAD_BYTES);
-  const { fields, files } = parseMultipart(raw, (boundaryMatch[1] || boundaryMatch[2]).trim());
+  const name = safeFilename(rawName);
+  const ext = path.extname(name).toLowerCase();
+  if (!ALLOWED_EXTENSIONS.has(ext)) {
+    return sendJson(res, 415, { error: 'Unsupported file type.' });
+  }
+
+  const data = await readBody(req, MAX_FILE_BYTES);
+  if (!data.length) return sendJson(res, 400, { error: 'Empty file.' });
+
+  const ref = /^PK-\d{6}-[A-Z0-9]{5,6}$/.test(url.searchParams.get('reference') || '')
+    ? url.searchParams.get('reference')
+    : 'unfiled';
+
+  const targetDir = path.join(UPLOAD_DIR, ref);
+  await fsp.mkdir(targetDir, { recursive: true });
+
+  let stored = `${category}-${name}`;
+  let attempt = 1;
+  while (fs.existsSync(path.join(targetDir, stored))) {
+    stored = `${category}-${attempt++}-${name}`;
+  }
+  await fsp.writeFile(path.join(targetDir, stored), data);
+
+  console.log(`[upload] ${ref} — ${stored} (${data.length} bytes)`);
+  sendJson(res, 200, {
+    ok: true,
+    url: `file://${path.resolve(targetDir, stored)}`,
+    pathname: `${ref}/${stored}`,
+    category,
+    name,
+    bytes: data.length
+  });
+}
+
+/** POST /api/onboarding — JSON carrier details plus already-uploaded document refs. */
+async function handleOnboarding(req, res) {
+  const raw = await readBody(req, MAX_JSON_BYTES);
+
+  let fields;
+  try {
+    fields = JSON.parse(raw.toString('utf8') || '{}');
+  } catch {
+    return sendJson(res, 400, { error: 'Invalid JSON body.' });
+  }
 
   if (fields.website) return sendJson(res, 200, { ok: true });
 
@@ -232,49 +241,21 @@ async function handleOnboarding(req, res) {
     ? fields.reference
     : reference();
 
-  const targetDir = path.join(UPLOAD_DIR, ref);
-  await fsp.mkdir(targetDir, { recursive: true });
-
-  const saved = [];
-  const rejected = [];
-
-  for (const file of files) {
-    const name = safeFilename(file.filename);
-    const ext = path.extname(name).toLowerCase();
-
-    if (!ALLOWED_EXTENSIONS.has(ext)) {
-      rejected.push({ filename: file.filename, reason: 'unsupported file type' });
-      continue;
-    }
-    if (file.data.length > MAX_FILE_BYTES) {
-      rejected.push({ filename: file.filename, reason: 'exceeds 15 MB' });
-      continue;
-    }
-    if (file.data.length === 0) continue;
-
-    // Prefix with the document category so the folder reads at a glance.
-    const category = file.field.replace(/^doc_/, '');
-    let stored = `${category}-${name}`;
-    let attempt = 1;
-    while (fs.existsSync(path.join(targetDir, stored))) {
-      stored = `${category}-${attempt++}-${name}`;
-    }
-
-    await fsp.writeFile(path.join(targetDir, stored), file.data);
-    saved.push({ category, storedAs: stored, originalName: file.filename, bytes: file.data.length });
-  }
+  const documents = Array.isArray(fields.documents) ? fields.documents : [];
 
   const record = {
     reference: ref,
     receivedAt: new Date().toISOString(),
     ip: req.socket.remoteAddress,
     fields: { ...fields },
-    documents: saved,
-    rejectedDocuments: rejected
+    documents
   };
   delete record.fields.website;
+  delete record.fields.documents;
 
   await appendRecord('onboarding.ndjson', record);
+  const targetDir = path.join(UPLOAD_DIR, ref);
+  await fsp.mkdir(targetDir, { recursive: true });
   await fsp.writeFile(path.join(targetDir, 'submission.json'), JSON.stringify(record, null, 2), 'utf8');
 
   await notify({
@@ -288,17 +269,11 @@ async function handleOnboarding(req, res) {
     dot: fields.dotNumber,
     equipment: fields.equipment,
     trucks: fields.truckCount,
-    documentsReceived: saved.length,
-    documentsRejected: rejected.length
+    documentsReceived: documents.length
   });
 
-  console.log(`[onboarding] ${ref} — ${fields.companyName} (${saved.length} document(s))`);
-  sendJson(res, 200, {
-    ok: true,
-    reference: ref,
-    documentsReceived: saved.length,
-    rejectedDocuments: rejected
-  });
+  console.log(`[onboarding] ${ref} — ${fields.companyName} (${documents.length} document(s))`);
+  sendJson(res, 200, { ok: true, reference: ref, documentsReceived: documents.length });
 }
 
 /* ------------------------------------------------------------------ *
@@ -345,6 +320,9 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && url.pathname === '/api/leads') {
       return await handleLead(req, res);
     }
+    if (req.method === 'POST' && url.pathname === '/api/upload') {
+      return await handleUpload(req, res, url);
+    }
     if (req.method === 'POST' && url.pathname === '/api/onboarding') {
       return await handleOnboarding(req, res);
     }
@@ -356,8 +334,17 @@ const server = http.createServer(async (req, res) => {
     }
     sendJson(res, 405, { error: 'Method not allowed' });
   } catch (err) {
-    console.error('[error]', err);
-    sendJson(res, err.statusCode || 500, { error: err.statusCode === 413 ? 'Upload too large.' : 'Server error.' });
+    console.error('[error]', err.message);
+    if (!res.headersSent) {
+      sendJson(res, err.statusCode || 500, {
+        error: err.statusCode === 413
+          ? 'File is larger than 4 MB. Email it to packets@pkdispatching.com instead.'
+          : 'Server error.'
+      });
+    }
+    // The request body may still be arriving; close the socket once the
+    // response has flushed so the client isn't left waiting.
+    if (err.statusCode === 413) res.on('finish', () => req.destroy());
   }
 });
 

@@ -14,13 +14,17 @@
   var CONFIG = {
     // JSON endpoint for the short lead forms (hero + contact).
     leadEndpoint: '/api/leads',
-    // Multipart endpoint for express onboarding (fields + document uploads).
+    // JSON endpoint for express onboarding (carrier details + document URLs).
     onboardEndpoint: '/api/onboarding',
+    // Raw-body endpoint that takes ONE document per request and returns its URL.
+    // Documents go up individually because Vercel caps a function request body
+    // at ~4.5 MB — a whole packet in one request would be rejected.
+    uploadEndpoint: '/api/upload',
     // Used when an endpoint is unavailable or not configured.
     fallbackEmail: 'dispatch@pkdispatching.com',
     packetEmail: 'packets@pkdispatching.com',
     phone: '(555) 555-0123',
-    maxFileBytes: 15 * 1024 * 1024, // 15 MB per file
+    maxFileBytes: 4 * 1024 * 1024, // 4 MB per file — keeps each upload under the cap
     allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'heic', 'doc', 'docx', 'webp']
   };
 
@@ -581,30 +585,76 @@
     }
   }
 
+  /**
+   * Send every attached document to the upload endpoint, one request each,
+   * and resolve with the list of stored document descriptors.
+   */
+  function uploadDocuments(reference, onProgress) {
+    var queue = [];
+    Object.keys(fileStore).forEach(function (docKey) {
+      fileStore[docKey].forEach(function (file) {
+        queue.push({ category: docKey, file: file });
+      });
+    });
+
+    if (!queue.length) return Promise.resolve([]);
+    if (!CONFIG.uploadEndpoint) return Promise.reject(new Error('No upload endpoint configured'));
+
+    var stored = [];
+    var done = 0;
+
+    // Sequential rather than parallel: gentler on a phone's uplink, and it
+    // keeps the progress counter honest.
+    return queue.reduce(function (chain, item) {
+      return chain.then(function () {
+        var url = CONFIG.uploadEndpoint +
+          '?name=' + encodeURIComponent(item.file.name) +
+          '&category=' + encodeURIComponent(item.category) +
+          '&reference=' + encodeURIComponent(reference);
+
+        return fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': item.file.type || 'application/octet-stream' },
+          body: item.file
+        }).then(function (response) {
+          return response.json().catch(function () { return {}; }).then(function (result) {
+            if (!response.ok) throw new Error(result.error || 'Upload failed');
+            stored.push({
+              category: item.category,
+              name: item.file.name,
+              bytes: item.file.size,
+              url: result.url
+            });
+            done++;
+            if (onProgress) onProgress(done, queue.length);
+          });
+        });
+      });
+    }, Promise.resolve()).then(function () { return stored; });
+  }
+
   function submitOnboarding(form) {
     var button = form.querySelector('button[type="submit"]');
+    var label = button.querySelector('.btn__label');
     button.classList.add('is-loading');
-    button.querySelector('.btn__label').textContent = 'Submitting…';
+    label.textContent = 'Submitting…';
 
     var data = collectOnboarding();
     var ref = referenceNumber();
 
-    var payload = new FormData();
-    payload.append('reference', ref);
-    payload.append('submittedAt', new Date().toISOString());
-    payload.append('formType', 'express-onboarding');
-    Object.keys(data).forEach(function (key) {
-      var value = data[key];
-      payload.append(key, Array.isArray(value) ? value.join(', ') : value);
-    });
-    Object.keys(fileStore).forEach(function (docKey) {
-      fileStore[docKey].forEach(function (file) {
-        payload.append('doc_' + docKey, file, file.name);
-      });
-    });
-    payload.append('documentCount', String(totalFileCount()));
-
-    post(CONFIG.onboardEndpoint, payload)
+    uploadDocuments(ref, function (done, total) {
+      label.textContent = 'Uploading document ' + done + ' of ' + total + '…';
+    }).then(function (documents) {
+      label.textContent = 'Finishing up…';
+      var payload = {
+        reference: ref,
+        submittedAt: new Date().toISOString(),
+        formType: 'express-onboarding',
+        documents: documents
+      };
+      Object.keys(data).forEach(function (key) { payload[key] = data[key]; });
+      return post(CONFIG.onboardEndpoint, JSON.stringify(payload), true);
+    })
       .then(function (result) {
         $('#refNumber').textContent = (result && result.reference) || ref;
         form.hidden = true;
@@ -613,14 +663,18 @@
         success.hidden = false;
         success.scrollIntoView({ behavior: 'smooth', block: 'center' });
       })
-      .catch(function () {
-        // No backend reachable — hand the carrier a working manual path.
+      .catch(function (err) {
+        // Backend unreachable or storage unavailable — give the carrier a
+        // working manual path rather than a dead end.
         emailFallback('Express Onboarding — ' + (data.companyName || 'New Carrier') + ' (' + ref + ')', data, ref, true);
-        toast('We couldn\'t reach the server. We opened an email with your details — attach your documents and send it, or call ' + CONFIG.phone + '.', true);
+        var reason = err && err.message && !/Failed to fetch|NetworkError|No endpoint/i.test(err.message)
+          ? err.message + ' '
+          : 'We couldn\'t reach the server. ';
+        toast(reason + 'We opened an email with your details — attach your documents and send it, or call ' + CONFIG.phone + '.', true);
       })
       .finally(function () {
         button.classList.remove('is-loading');
-        button.querySelector('.btn__label').textContent = 'Submit & Get Dispatched';
+        label.textContent = 'Submit & Get Dispatched';
       });
   }
 
