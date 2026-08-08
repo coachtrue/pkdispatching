@@ -174,7 +174,7 @@ async function handleLead(req, res) {
 /**
  * POST /api/upload?name=&category=&reference= — one raw file per request.
  * Mirrors the Vercel function so local and production behave identically;
- * here the bytes land on disk instead of in Vercel Blob.
+ * here the bytes land on disk instead of in Supabase Storage.
  */
 async function handleUpload(req, res, url) {
   const rawName = url.searchParams.get('name') || 'document';
@@ -210,8 +210,8 @@ async function handleUpload(req, res, url) {
   console.log(`[upload] ${ref} — ${stored} (${data.length} bytes)`);
   sendJson(res, 200, {
     ok: true,
-    url: `file://${path.resolve(targetDir, stored)}`,
-    pathname: `${ref}/${stored}`,
+    path: `${ref}/${stored}`,
+    localFile: path.resolve(targetDir, stored),
     category,
     name,
     bytes: data.length

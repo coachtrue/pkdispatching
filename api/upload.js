@@ -1,5 +1,5 @@
 /**
- * POST /api/upload?name=<filename>&category=<doc key>
+ * POST /api/upload?name=<filename>&category=<doc key>&reference=<ref>
  *
  * Body: the raw file bytes (not multipart). One file per request.
  *
@@ -8,11 +8,13 @@
  * packet in a single request would fail. Uploading each document separately
  * keeps every request small and lets the UI show per-file progress.
  *
- * Files land in Vercel Blob. Requires a Blob store connected to the project,
- * which supplies BLOB_READ_WRITE_TOKEN automatically.
+ * Files land in a PRIVATE Supabase Storage bucket. Nothing here is publicly
+ * readable — the onboarding endpoint mints short-lived signed links.
  */
 
 'use strict';
+
+const supabase = require('./_supabase');
 
 const MAX_FILE_BYTES = 4 * 1024 * 1024; // stay under Vercel's ~4.5 MB body cap
 
@@ -35,10 +37,12 @@ function extensionOf(name) {
 }
 
 function safeName(name) {
-  return String(name || 'file')
+  const cleaned = String(name || 'file')
     .replace(/[\\/]/g, '_')
     .replace(/[^\w.\- ]+/g, '_')
-    .slice(-120) || 'file';
+    .replace(/\s+/g, '_')
+    .slice(-120);
+  return cleaned && cleaned !== '.' ? cleaned : 'file';
 }
 
 async function readRaw(req) {
@@ -58,7 +62,6 @@ module.exports = async function handler(req, res) {
 
   try {
     const url = new URL(req.url, `https://${req.headers.host}`);
-    const rawName = url.searchParams.get('name') || 'document';
     const category = url.searchParams.get('category') || 'other';
 
     if (!CATEGORIES.has(category)) {
@@ -66,7 +69,7 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    const name = safeName(rawName);
+    const name = safeName(url.searchParams.get('name') || 'document');
     const ext = extensionOf(name);
     if (!ALLOWED[ext]) {
       res.status(415).json({ error: 'Unsupported file type. Send PDF, JPG, PNG, HEIC, WEBP, DOC, or DOCX.' });
@@ -83,38 +86,33 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    if (!supabase.isConfigured()) {
       res.status(503).json({
         error: 'Document storage is not configured yet. Please email your packet to packets@pkdispatching.com.'
       });
       return;
     }
 
-    let put;
-    try {
-      ({ put } = require('@vercel/blob'));
-    } catch {
-      res.status(503).json({ error: 'Document storage unavailable. Please email your packet instead.' });
-      return;
-    }
+    const reference = /^PK-\d{6}-[A-Z0-9]{5,6}$/.test(url.searchParams.get('reference') || '')
+      ? url.searchParams.get('reference')
+      : 'unfiled';
 
-    const reference = (url.searchParams.get('reference') || 'unfiled').replace(/[^\w-]/g, '');
-    const blob = await put(`carrier-packets/${reference}/${category}-${name}`, data, {
-      access: 'public',        // unguessable random URL; see the privacy note in README
-      addRandomSuffix: true,
-      contentType: ALLOWED[ext]
-    });
+    // Random prefix keeps two carriers uploading "coi.pdf" from colliding.
+    const unique = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+    const objectPath = `${reference}/${category}-${unique}-${name}`;
+
+    await supabase.uploadObject(objectPath, data, ALLOWED[ext]);
 
     res.status(200).json({
       ok: true,
-      url: blob.url,
-      pathname: blob.pathname,
+      path: objectPath,
       category,
       name,
+      contentType: ALLOWED[ext],
       bytes: data.length
     });
   } catch (err) {
-    console.error('[upload]', err);
-    res.status(500).json({ error: 'Upload failed. Please try again or email your packet.' });
+    console.error('[upload]', err.message);
+    res.status(500).json({ error: 'Upload failed. Please try again, or email your packet.' });
   }
 };

@@ -623,7 +623,9 @@
               category: item.category,
               name: item.file.name,
               bytes: item.file.size,
-              url: result.url
+              contentType: result.contentType || item.file.type || '',
+              // Storage path in the private bucket — not a public link.
+              path: result.path || ''
             });
             done++;
             if (onProgress) onProgress(done, queue.length);

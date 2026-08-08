@@ -11,52 +11,69 @@ index.html         the landing page
 styles.css         all styling (responsive, dark-mode aware, print styles)
 app.js             forms, validation, multi-step onboarding, file uploads
 vercel.json        routing + security headers
+supabase/
+  schema.sql       tables, indexes, private bucket, RLS — run this once
 api/
-  leads.js         quick call-back + contact form       (JSON)
-  upload.js        one carrier document per request     (raw body -> Vercel Blob)
-  onboarding.js    express onboarding submission        (JSON + document URLs)
+  leads.js         quick call-back + contact form    -> leads table
+  upload.js        one document per request          -> private Supabase bucket
+  onboarding.js    express onboarding submission     -> carriers + carrier_documents
+  _supabase.js     tiny REST client (no dependencies)
   _lib.js          shared helpers
 server.js          local dev server (same three endpoints, saves to ./data)
 ```
 
+Stack: **Vercel** hosts the site and functions, **Supabase** stores carrier records and
+packet documents, **GitHub** triggers the deploy.
+
 ---
 
-## Deploy to Vercel
+## Setup, start to finish
 
-```bash
-npm i -g vercel     # if you don't have it
-vercel              # preview deploy
-vercel --prod       # production
-```
+### 1. Supabase — create the schema
 
-Or push to GitHub and import the repo at vercel.com — it needs no build settings.
+Dashboard → SQL Editor → New query → paste all of `supabase/schema.sql` → Run.
 
-### Two things to set up in the Vercel dashboard
+That creates the `leads`, `carriers`, and `carrier_documents` tables, a
+`carrier_intake_queue` view for your dashboard, and a **private** `carrier-packets`
+storage bucket. It's idempotent, so re-running it is safe.
 
-**1. Blob storage** (required for document uploads)
-Storage → Create Database → **Blob** → connect it to this project. That injects
-`BLOB_READ_WRITE_TOKEN` automatically. Until this exists, uploads return a clear
-"storage not configured" message and carriers are told to email their packet instead —
-the site still works, you just don't get uploads.
+### 2. Vercel — set three environment variables
 
-**2. `NOTIFY_WEBHOOK`** (strongly recommended)
-Settings → Environment Variables. **Serverless has no disk, so this webhook is your
-inbox.** Without it, submissions exist only in the Vercel function logs.
+Settings → Environment Variables:
 
-Point it at whatever you already use:
-- **Slack** — an incoming webhook URL, and submissions land in a channel
-- **Zapier / Make** — a catch hook, then route to email, Google Sheets, or a CRM
+| Variable | Where to find it | Required |
+|---|---|---|
+| `SUPABASE_URL` | Supabase → Settings → API → Project URL | Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → `service_role` key | Yes |
+| `NOTIFY_WEBHOOK` | Your Slack incoming webhook or Zapier catch hook | Recommended |
 
-Every submission posts a JSON summary including clickable links to the uploaded documents.
+> **The `service_role` key bypasses Row Level Security.** It is only ever read inside
+> `api/` functions, which run on the server — it is never sent to the browser. Don't put
+> it in any file under the site root, and don't prefix it with `NEXT_PUBLIC_`.
 
-### ⚠️ About uploaded document privacy
+### 3. Deploy
 
-Uploaded files go to Vercel Blob with `access: 'public'` and a random suffix — the URL is
-unguessable, but anyone holding the link can open it. **These are W-9s, CDLs, and insurance
-certificates.** That's normally acceptable since the links only ever go to your webhook,
-but treat those links as sensitive: don't paste them into public channels. If you need
-stricter handling, move `api/upload.js` to a private store (S3 with signed URLs, or a
-private Blob store) — it's the only file that would change.
+Push to GitHub — Vercel builds automatically. Or `vercel --prod` from the CLI.
+No build settings needed; there's nothing to compile.
+
+### Where your submissions land
+
+- **Supabase `carriers` / `leads` tables** — the durable record. Sort, filter, and work
+  the queue from the Supabase dashboard, or query `carrier_intake_queue` for a
+  ready-made list with document counts.
+- **`NOTIFY_WEBHOOK`** — the real-time ping, so you know a carrier is waiting. The payload
+  includes **7-day signed links** to each uploaded document, clickable straight from Slack.
+
+If the database write ever fails, the submission is **not** lost — the carrier still gets a
+success page and the webhook still fires, flagged `savedToDatabase: false`.
+
+### Document privacy
+
+The `carrier-packets` bucket is **private**. Nothing is world-readable. Documents are
+reached only through short-lived signed URLs the server mints, and RLS is enabled with no
+policies, so the anon key can't read carrier PII even if it leaks. This matters — these are
+W-9s, CDLs, and insurance certificates. Signed links still grant access to whoever holds
+them, so treat the webhook channel as sensitive.
 
 ---
 
@@ -126,11 +143,14 @@ packet as one multipart request would fail, so documents go up **one per request
 
 ```
 POST /api/upload?name=coi.pdf&category=insurance&reference=PK-260808-A1B2C3
-     body: the raw file bytes    ->  { url, bytes }
+     body: the raw file bytes  ->  { path, bytes, contentType }
 
 POST /api/onboarding
-     body: { ...carrier fields, documents: [{ category, name, bytes, url }] }
+     body: { ...carrier fields, documents: [{ category, name, bytes, path }] }
 ```
+
+`path` points into the private bucket — it is not a link, and it is useless without a
+signed URL minted by the server.
 
 Each file is capped at **4 MB**, which comfortably covers a phone photo or a scanned PDF.
 The UI tells carriers to email anything larger. Uploads run sequentially with a live
@@ -167,8 +187,10 @@ Server/function environment variables:
 
 | Variable | Used by | Purpose |
 |---|---|---|
-| `BLOB_READ_WRITE_TOKEN` | `api/upload.js` | Set automatically when you connect a Blob store |
-| `NOTIFY_WEBHOOK` | all functions | Where submissions are delivered |
+| `SUPABASE_URL` | `api/*` | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | `api/*` | Server-only key; bypasses RLS |
+| `SUPABASE_BUCKET` | `api/upload.js` | Defaults to `carrier-packets` |
+| `NOTIFY_WEBHOOK` | `api/*` | Real-time submission alerts |
 | `PORT`, `DATA_DIR` | `server.js` | Local dev only |
 
 ---
