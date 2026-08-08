@@ -108,13 +108,12 @@ data/
 | `dispatch@pkdispatching.com` | `index.html`, `app.js` | **Still a placeholder** |
 | `packets@pkdispatching.com` | `index.html`, `app.js`, `api/upload.js` | **Still a placeholder** |
 | `pkdispatching.com` (canonical + schema) | `index.html` | **Still a placeholder** |
-| Percentage fee — **10%** | `index.html` → `#pricing` | ✅ Confirmed |
-| Flat weekly — **$350/truck/week** | `index.html` → `#pricing` | **Unconfirmed guess** |
-| Fleet tier — **Custom, 3+ trucks** | `index.html` → `#pricing` | **Unconfirmed guess** |
+| Dispatch fee — **10% of gross, single rate** | `index.html` → `#pricing` | ✅ Confirmed |
 | Terms of Service / Privacy Policy | `app.js` → `MODAL_CONTENT` | Draft — have counsel review |
 
-If you only sell the 10% percentage plan, delete the Flat Weekly and Fleet `<article
-class="plan">` blocks — the grid reflows to whatever is left with no CSS changes.
+Pricing is a single 10% plan — no tiers. If you ever add a second plan, drop another
+`<article class="plan">` into `.pricing` and remove the `pricing--solo` / `plan--solo`
+classes; the grid goes back to side-by-side columns on its own.
 
 ---
 
@@ -198,8 +197,8 @@ Server/function environment variables:
 ## What's on the page
 
 Hero with quick-capture form · service commitments strip · three-step express lane overview ·
-nine dispatch services · six-stage process timeline · nine equipment types · three pricing
-tiers with an explicit "what's never included" list · carrier packet document checklist ·
+nine dispatch services · six-stage process timeline · nine equipment types · a single 10%
+pricing plan with an explicit "what's never included" list · carrier packet document checklist ·
 the four-step onboarding form · an honest comparison section · ten-question FAQ · contact
 section with a second form · sticky mobile call/signup bar · Terms and Privacy modals.
 

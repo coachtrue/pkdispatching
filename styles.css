@@ -429,6 +429,32 @@ input.is-invalid, select.is-invalid, textarea.is-invalid {
   transform: rotate(-45deg);
 }
 
+/* Single-plan pricing: one centered card, wide enough that the included
+   list can run in two columns instead of one lonely stack. */
+/* Doubled class beats the plain `.pricing` override in the responsive block below. */
+.pricing.pricing--solo { grid-template-columns: minmax(0, 660px); justify-content: center; }
+.plan--solo { transform: none; padding: 2.2rem clamp(1.4rem, 3vw, 2.4rem); text-align: center; }
+.plan--solo .plan__price { justify-content: center; align-items: baseline; gap: .55rem; }
+.plan--solo .plan__num { font-size: clamp(3.4rem, 7vw, 4.6rem); }
+.plan--solo .plan__unit { font-size: 1rem; }
+.plan--solo .plan__desc {
+  font-size: .96rem; max-width: 46ch; margin-inline: auto; margin-bottom: 0;
+}
+.plan__eyebrow {
+  text-transform: uppercase; letter-spacing: .14em; font-size: .72rem; font-weight: 800;
+  color: var(--amber-600); margin: 0 0 .5rem;
+}
+.plan__list--split {
+  grid-template-columns: repeat(2, 1fr); gap: .6rem 1.6rem;
+  text-align: left; margin: 1.7rem 0;
+  padding-top: 1.5rem; border-top: 1px solid var(--line-soft);
+}
+.plan__cta { align-self: center; min-width: min(100%, 340px); }
+
+@media (max-width: 640px) {
+  .plan__list--split { grid-template-columns: 1fr; }
+}
+
 .pricing__notes {
   margin-top: 2.4rem; background: var(--surface); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 1.6rem 1.7rem;
@@ -796,6 +822,7 @@ input.is-invalid, select.is-invalid, textarea.is-invalid {
   .brand__mark { background: var(--navy-700); }
   .btn--outline { --btn-fg: var(--ink); }
   .plan__num { color: var(--amber-400); }
+  .plan__eyebrow { color: var(--amber-400); }
   .nav { background: var(--surface); }
   .nav-toggle { background: var(--surface); }
   .nav-toggle span { background: var(--ink); }
