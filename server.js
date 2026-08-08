@@ -326,6 +326,20 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && url.pathname === '/api/onboarding') {
       return await handleOnboarding(req, res);
     }
+    // The admin CRM runs the very same handler Vercel will execute, wrapped
+    // in a minimal res shim, so local behaviour matches production exactly.
+    if (url.pathname === '/api/admin') {
+      const shim = Object.assign(res, {
+        status(code) { res.statusCode = code; return res; },
+        json(payload) {
+          const text = JSON.stringify(payload);
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.end(text);
+          return res;
+        }
+      });
+      return await require('./api/admin.js')(req, shim);
+    }
     if (req.method === 'GET' && url.pathname === '/api/health') {
       return sendJson(res, 200, { ok: true, uptime: process.uptime() });
     }

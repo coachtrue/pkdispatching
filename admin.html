@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Dispatch Desk — PK Dispatching</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230b1b33'/><text y='70' x='50' text-anchor='middle' font-size='54' font-family='system-ui' font-weight='700' fill='%23ffa726'>PK</text></svg>">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div class="gate" id="gate" hidden>
+  <form class="gate__card" id="loginForm">
+    <div class="gate__brand"><span class="gate__mark">PK</span> Dispatch Desk</div>
+    <p class="gate__sub">Carrier records and communications.</p>
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password" required autofocus>
+    <p class="gate__err" id="loginError" role="alert"></p>
+    <button class="btn btn--primary" type="submit"><span id="loginLabel">Sign in</span></button>
+  </form>
+</div>
+
+<!-- ================= APP ================= -->
+<div class="app" id="app" hidden>
+  <aside class="side">
+    <div class="side__brand"><span class="side__mark">PK</span><span>Dispatch Desk</span></div>
+
+    <nav class="side__nav" id="viewNav" aria-label="Views">
+      <button class="side__link is-active" data-view="all">All contacts</button>
+      <button class="side__link" data-view="carrier">Carriers</button>
+      <button class="side__link" data-view="lead">Leads</button>
+      <button class="side__link" data-view="followup">Follow-ups due</button>
+    </nav>
+
+    <div class="side__foot">
+      <button class="linkish" id="logoutBtn">Sign out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M15.5 14h-.8l-.3-.3a6.5 6.5 0 1 0-.7.7l.3.3v.8l5 5 1.5-1.5-5-5Zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Z"/></svg>
+        <input id="search" type="search" placeholder="Search name, MC, phone, email, reference…" autocomplete="off">
+      </div>
+      <select id="statusFilter" aria-label="Filter by status">
+        <option value="">Any status</option>
+      </select>
+      <button class="btn btn--ghost btn--sm" id="refreshBtn">Refresh</button>
+    </header>
+
+    <section class="stats" id="stats" aria-label="Summary"></section>
+
+    <section class="tablewrap">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Contact</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Equipment</th>
+            <th class="num">Docs</th>
+            <th>Last contact</th>
+            <th>Follow-up</th>
+            <th>Received</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p class="empty" id="empty" hidden>No contacts match.</p>
+    </section>
+  </main>
+
+  <!-- ================= DETAIL DRAWER ================= -->
+  <div class="drawer" id="drawer" hidden>
+    <div class="drawer__scrim" data-close-drawer></div>
+    <aside class="drawer__panel" role="dialog" aria-modal="true" aria-labelledby="drawerName">
+      <header class="drawer__head">
+        <div>
+          <h2 id="drawerName"></h2>
+          <p class="drawer__meta" id="drawerMeta"></p>
+        </div>
+        <button class="drawer__close" data-close-drawer aria-label="Close">&times;</button>
+      </header>
+
+      <div class="drawer__body" id="drawerBody"></div>
+    </aside>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="admin.js"></script>
+</body>
+</html>
