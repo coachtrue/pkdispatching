@@ -12,7 +12,7 @@ styles.css         all styling (responsive, dark-mode aware, print styles)
 app.js             forms, validation, multi-step onboarding, file uploads
 admin.html         Dispatch Desk — the admin CRM
 admin.css          dashboard styling
-admin.js           dashboard behaviour (textContent only) — MISSING, see ⚠️ note below
+admin.js           dashboard behaviour (textContent only — see note below)
 vercel.json        routing + security headers
 supabase/
   schema.sql       tables, indexes, private bucket, RLS — run this once
@@ -77,11 +77,6 @@ success page and the webhook still fires, flagged `savedToDatabase: false`.
 ---
 
 ## Dispatch Desk — the admin CRM
-
-> ⚠️ **`admin.js` (the browser-side dashboard script `admin.html` loads) is missing from
-> the repo.** What landed at the repo root under that name during the last upload is
-> actually the *backend* handler and has been moved to `api/admin.js`, where it belongs.
-> `/admin` will load but won't function until the real front-end `admin.js` is added.
 
 Live at **`/admin`** on your deployment. Sign in with `ADMIN_PASSWORD`.
 
