@@ -291,22 +291,33 @@ async function serveStatic(req, res, pathname) {
     return sendJson(res, 403, { error: 'Forbidden' });
   }
 
-  try {
-    const stat = await fsp.stat(resolved);
-    if (stat.isDirectory()) throw new Error('directory');
+  // Mirrors Vercel's cleanUrls: true — /admin serves admin.html — so local
+  // dev and production agree on which URLs work.
+  const candidates = path.extname(resolved)
+    ? [resolved]
+    : [resolved, `${resolved}.html`];
 
-    const ext = path.extname(resolved).toLowerCase();
-    res.writeHead(200, {
-      'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
-      'Content-Length': stat.size,
-      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=3600',
-      'X-Content-Type-Options': 'nosniff'
-    });
-    fs.createReadStream(resolved).pipe(res);
-  } catch {
-    res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end('<h1>404 — Not found</h1><p><a href="/">Back to PK Dispatching</a></p>');
+  for (const candidate of candidates) {
+    try {
+      const stat = await fsp.stat(candidate);
+      if (stat.isDirectory()) continue;
+
+      const ext = path.extname(candidate).toLowerCase();
+      res.writeHead(200, {
+        'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
+        'Content-Length': stat.size,
+        'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=3600',
+        'X-Content-Type-Options': 'nosniff'
+      });
+      fs.createReadStream(candidate).pipe(res);
+      return;
+    } catch {
+      // Try the next candidate.
+    }
   }
+
+  res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.end('<h1>404 — Not found</h1><p><a href="/">Back to PK Dispatching</a></p>');
 }
 
 /* ------------------------------------------------------------------ *
