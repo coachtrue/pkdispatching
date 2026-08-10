@@ -7,6 +7,7 @@
 
 const { reference, readJson, notify, clean } = require('./_lib');
 const supabase = require('./_supabase');
+const ghl = require('./_ghl');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -62,6 +63,22 @@ module.exports = async function handler(req, res) {
     }
   } else {
     console.warn('[lead] Supabase is not configured — relying on the webhook only.');
+  }
+
+  // Never let a GHL hiccup cost the lead — this only ever logs on failure.
+  try {
+    await ghl.push('lead', {
+      reference: ref,
+      contactName: row.name,
+      email: row.email,
+      phone: row.phone,
+      companyName: row.company_name,
+      mcNumber: row.mc_number,
+      equipment: row.equipment,
+      notes: row.message
+    }, []);
+  } catch (err) {
+    console.error('[lead] GHL push failed:', err.message);
   }
 
   await notify({

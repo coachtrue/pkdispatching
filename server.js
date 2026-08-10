@@ -22,6 +22,7 @@ const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
+const ghl = require('./api/_ghl');
 
 const PORT = Number(process.env.PORT) || 3000;
 const ROOT = __dirname;
@@ -153,6 +154,22 @@ async function handleLead(req, res) {
   delete record.website;
 
   await appendRecord('leads.ndjson', record);
+
+  try {
+    await ghl.push('lead', {
+      reference: record.reference,
+      contactName: record.name,
+      email: record.email,
+      phone: record.phone,
+      companyName: record.companyName,
+      mcNumber: record.mcNumber,
+      equipment: record.equipment,
+      notes: record.message
+    }, []);
+  } catch (err) {
+    console.error('[lead] GHL push failed:', err.message);
+  }
+
   await notify({
     type: 'lead',
     reference: record.reference,
@@ -257,6 +274,33 @@ async function handleOnboarding(req, res) {
   const targetDir = path.join(UPLOAD_DIR, ref);
   await fsp.mkdir(targetDir, { recursive: true });
   await fsp.writeFile(path.join(targetDir, 'submission.json'), JSON.stringify(record, null, 2), 'utf8');
+
+  try {
+    await ghl.push('carrier', {
+      reference: ref,
+      contactName: fields.contactName,
+      email: fields.email,
+      phone: fields.phone,
+      companyName: fields.companyName,
+      homeCity: fields.homeCity,
+      homeState: fields.homeState,
+      mcNumber: fields.mcNumber,
+      dotNumber: fields.dotNumber,
+      authorityAge: fields.authorityAge,
+      equipment: fields.equipment,
+      endorsements: fields.endorsements,
+      truckCount: fields.truckCount,
+      radius: fields.radius,
+      minRpm: fields.minRpm,
+      preferredLanes: fields.preferredLanes,
+      avoidAreas: fields.avoidAreas,
+      factoringCompany: fields.factoringCompany,
+      startDate: fields.startDate,
+      notes: fields.notes
+    }, documents.map((doc) => ({ category: doc.category, link: `local file: ${doc.name || 'document'} (not a real URL — no Supabase locally)` })));
+  } catch (err) {
+    console.error('[onboarding] GHL push failed:', err.message);
+  }
 
   await notify({
     type: 'onboarding',

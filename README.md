@@ -23,8 +23,10 @@ api/
   admin.js         the CRM back end (auth + all admin actions)
   _auth.js         admin session signing and verification
   _supabase.js     tiny REST client (no dependencies)
+  _ghl.js          GoHighLevel push — optional, see below
   _lib.js          shared helpers
 server.js          local dev server (same endpoints, saves to ./data)
+ghl-setup.js       one-time GHL custom-field + pipeline setup — see below
 ```
 
 Stack: **Vercel** hosts the site and functions, **Supabase** stores carrier records and
@@ -119,6 +121,45 @@ reached only through short-lived signed URLs the server mints, and RLS is enable
 policies, so the anon key can't read carrier PII even if it leaks. This matters — these are
 W-9s, CDLs, and insurance certificates. Signed links still grant access to whoever holds
 them, so treat the webhook channel as sensitive.
+
+---
+
+## GoHighLevel (optional)
+
+Every lead and carrier submission can also push into a GHL sub-account as an
+upserted contact, tagged and with the freight-specific fields filled in — MC/DOT
+number, equipment, lanes, factoring company, and so on. Supabase stays the durable
+record either way; GHL is where you'd actually work the relationship (calls, texts,
+pipeline). Skip this section entirely if you don't use GHL — every call site checks
+`isConfigured()` first and silently no-ops without it.
+
+**One-time setup**, from your own terminal, with a GHL **Private Integration token**
+for the target sub-account:
+
+```bash
+GHL_API_TOKEN=pit-… GHL_LOCATION_ID=… node ghl-setup.js --dry   # preview, no writes
+GHL_API_TOKEN=pit-… GHL_LOCATION_ID=… node ghl-setup.js         # creates the fields
+```
+
+It creates the sixteen freight custom fields it doesn't find already on the
+sub-account (matched by name, so it's safe to re-run), reads your pipelines, and
+prints the environment variables to paste into Vercel:
+
+```
+GHL_LOCATION_ID=…
+GHL_API_TOKEN=…          (the token you just used)
+GHL_FIELD_MAP={"mc_number":"...", ...}
+GHL_PIPELINE_ID=…        (optional — opens an opportunity per carrier)
+GHL_STAGE_ID=…           (optional — the stage new carriers land in)
+```
+
+Required token scopes: `locations.readonly`, `locations/customFields.write`,
+`contacts.write`, `contacts.readonly`, `opportunities.write`. The token is only
+ever read from the environment — never a file, an argument, or the repo — so it
+never lands in shell history or gets sent anywhere but GHL.
+
+Redeploy after setting the Vercel env vars; they only apply to builds created
+after they're set.
 
 ---
 
@@ -235,6 +276,8 @@ Server/function environment variables:
 | `SUPABASE_SERVICE_ROLE_KEY` | `api/*` | Server-only key; bypasses RLS |
 | `SUPABASE_BUCKET` | `api/upload.js` | Defaults to `carrier-packets` |
 | `NOTIFY_WEBHOOK` | `api/*` | Real-time submission alerts |
+| `GHL_API_TOKEN`, `GHL_LOCATION_ID` | `api/_ghl.js` | Optional — see [GoHighLevel](#gohighlevel-optional) |
+| `GHL_FIELD_MAP`, `GHL_PIPELINE_ID`, `GHL_STAGE_ID` | `api/_ghl.js` | Optional — printed by `ghl-setup.js` |
 | `PORT`, `DATA_DIR` | `server.js` | Local dev only |
 
 ---

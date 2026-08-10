@@ -10,6 +10,7 @@
 
 const { reference, readJson, notify, clean } = require('./_lib');
 const supabase = require('./_supabase');
+const ghl = require('./_ghl');
 
 const REQUIRED = ['companyName', 'contactName', 'phone', 'email', 'mcNumber', 'dotNumber'];
 
@@ -126,6 +127,34 @@ module.exports = async function handler(req, res) {
         link: link || '(sign failed — open it in the Supabase dashboard)'
       });
     }
+  }
+
+  // Never let a GHL hiccup cost the carrier — this only ever logs on failure.
+  try {
+    await ghl.push('carrier', {
+      reference: ref,
+      contactName: carrierRow.contact_name,
+      email: carrierRow.email,
+      phone: carrierRow.phone,
+      companyName: carrierRow.company_name,
+      homeCity: carrierRow.home_city,
+      homeState: carrierRow.home_state,
+      mcNumber: carrierRow.mc_number,
+      dotNumber: carrierRow.dot_number,
+      authorityAge: carrierRow.authority_age,
+      equipment: carrierRow.equipment,
+      endorsements: carrierRow.endorsements,
+      truckCount: carrierRow.truck_count,
+      radius: carrierRow.operating_radius,
+      minRpm: carrierRow.min_rate_per_mile,
+      preferredLanes: carrierRow.preferred_lanes,
+      avoidAreas: carrierRow.avoid_areas,
+      factoringCompany: carrierRow.factoring_company,
+      startDate: carrierRow.availability,
+      notes: carrierRow.notes
+    }, documentLinks);
+  } catch (err) {
+    console.error('[onboarding] GHL push failed:', err.message);
   }
 
   await notify({

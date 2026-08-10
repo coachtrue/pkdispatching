@@ -6,7 +6,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "ghl:setup": "node ghl-setup.js",
+    "ghl:setup:dry": "node ghl-setup.js --dry"
   },
   "engines": {
     "node": ">=18"
