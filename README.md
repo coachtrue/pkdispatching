@@ -4,12 +4,15 @@ A complete marketing site and carrier onboarding system for PK Dispatching, a fr
 dispatch service for owner-operators and small fleets.
 
 Plain HTML, CSS, and JavaScript — no build step, no framework, no bundler.
-Deploys to Vercel as a static site plus three small serverless functions.
+Deploys to Vercel as a static site plus four small serverless functions.
 
 ```
 index.html         the landing page
 styles.css         all styling (responsive, dark-mode aware, print styles)
 app.js             forms, validation, multi-step onboarding, file uploads
+admin.html         Dispatch Desk — the admin CRM
+admin.css          dashboard styling
+admin.js           dashboard behaviour (textContent only) — MISSING, see ⚠️ note below
 vercel.json        routing + security headers
 supabase/
   schema.sql       tables, indexes, private bucket, RLS — run this once
@@ -17,9 +20,11 @@ api/
   leads.js         quick call-back + contact form    -> leads table
   upload.js        one document per request          -> private Supabase bucket
   onboarding.js    express onboarding submission     -> carriers + carrier_documents
+  admin.js         the CRM back end (auth + all admin actions)
+  _auth.js         admin session signing and verification
   _supabase.js     tiny REST client (no dependencies)
   _lib.js          shared helpers
-server.js          local dev server (same three endpoints, saves to ./data)
+server.js          local dev server (same endpoints, saves to ./data)
 ```
 
 Stack: **Vercel** hosts the site and functions, **Supabase** stores carrier records and
@@ -33,9 +38,10 @@ packet documents, **GitHub** triggers the deploy.
 
 Dashboard → SQL Editor → New query → paste all of `supabase/schema.sql` → Run.
 
-That creates the `leads`, `carriers`, and `carrier_documents` tables, a
-`carrier_intake_queue` view for your dashboard, and a **private** `carrier-packets`
-storage bucket. It's idempotent, so re-running it is safe.
+That creates the `leads`, `carriers`, `carrier_documents`, and `activities` tables, the
+`crm_contacts` and `carrier_intake_queue` views the dashboard reads, and a **private**
+`carrier-packets` storage bucket. It's idempotent, so re-running it is safe — including
+on an existing database, where it only adds what's missing.
 
 ### 2. Vercel — set three environment variables
 
@@ -45,6 +51,7 @@ Settings → Environment Variables:
 |---|---|---|
 | `SUPABASE_URL` | Supabase → Settings → API → Project URL | Yes |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → `service_role` key | Yes |
+| `ADMIN_PASSWORD` | Invent a strong one — it opens the CRM | Yes |
 | `NOTIFY_WEBHOOK` | Your Slack incoming webhook or Zapier catch hook | Recommended |
 
 > **The `service_role` key bypasses Row Level Security.** It is only ever read inside
@@ -66,6 +73,49 @@ No build settings needed; there's nothing to compile.
 
 If the database write ever fails, the submission is **not** lost — the carrier still gets a
 success page and the webhook still fires, flagged `savedToDatabase: false`.
+
+---
+
+## Dispatch Desk — the admin CRM
+
+> ⚠️ **`admin.js` (the browser-side dashboard script `admin.html` loads) is missing from
+> the repo.** What landed at the repo root under that name during the last upload is
+> actually the *backend* handler and has been moved to `api/admin.js`, where it belongs.
+> `/admin` will load but won't function until the real front-end `admin.js` is added.
+
+Live at **`/admin`** on your deployment. Sign in with `ADMIN_PASSWORD`.
+
+**What it does**
+
+- **Queue view** — every carrier and lead in one list, with status, equipment, document
+  count, days since last contact, and follow-up date. Filter by type or status, or search
+  name, MC number, phone, email, or reference.
+- **Summary tiles** — new carriers, verifying, active, new leads, arrived today, and
+  follow-ups due. Anything needing attention carries an amber rail.
+- **Contact detail** — the full submission, one-tap Call / Text / Email, and the carrier's
+  packet documents behind **fresh one-hour signed links**, minted per view rather than
+  stored, so an old open tab can't keep handing out access to a W-9.
+- **Communications log** — record calls, texts, emails, and private notes against a
+  contact. Logging a real conversation stamps `last_contacted_at`; a private note doesn't.
+- **Pipeline** — carriers move `new → verifying → approved → active → paused / rejected`,
+  leads `new → contacted → qualified → converted / lost`. Every status change writes
+  itself into the timeline, so you can reconstruct what happened months later.
+
+**How access works**
+
+One shared password is exchanged for a signed, expiring session cookie (12 hours,
+HttpOnly, SameSite=Strict, Secure in production). There's no session table, which suits
+serverless — the cookie carries its own proof. Changing `ADMIN_PASSWORD` invalidates every
+existing session, because the signing key is derived from it.
+
+That's the right shape for a small team. If you later need per-person logins and an audit
+trail naming who did what, move to Supabase Auth — `api/_auth.js` is the only file that
+would change.
+
+> The dashboard renders text that carriers typed — company names, notes, file names. It's
+> built entirely with `textContent`, never `innerHTML`, so a carrier can't inject script
+> into your admin session. There's a test that proves it. **Keep it that way** if you edit
+> `admin.js`.
 
 ### Document privacy
 

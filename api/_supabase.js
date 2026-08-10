@@ -54,6 +54,46 @@ async function insert(table, row) {
   return Array.isArray(rows) ? rows[0] : rows;
 }
 
+/**
+ * Read rows. `query` is a raw PostgREST query string, e.g.
+ *   'select=*&order=created_at.desc&limit=50'
+ * Callers build it; everything user-supplied must be encodeURIComponent'd
+ * by the caller before it gets here.
+ */
+async function select(table, query) {
+  const { url } = config();
+  const res = await fetch(`${url}/rest/v1/${table}?${query}`, {
+    method: 'GET',
+    headers: headers({ Accept: 'application/json' })
+  });
+
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`Supabase select from ${table} failed (${res.status}): ${text.slice(0, 300)}`);
+  }
+  return text ? JSON.parse(text) : [];
+}
+
+/** Patch rows matching `filter` (a PostgREST filter, e.g. 'reference=eq.PK-1'). */
+async function update(table, filter, patch) {
+  const { url } = config();
+  const res = await fetch(`${url}/rest/v1/${table}?${filter}`, {
+    method: 'PATCH',
+    headers: headers({
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation'
+    }),
+    body: JSON.stringify(patch)
+  });
+
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`Supabase update on ${table} failed (${res.status}): ${text.slice(0, 300)}`);
+  }
+  const rows = text ? JSON.parse(text) : [];
+  return Array.isArray(rows) ? rows[0] : rows;
+}
+
 /** Upload raw bytes to the private bucket. Returns the storage path. */
 async function uploadObject(objectPath, data, contentType) {
   const { url } = config();
@@ -97,4 +137,4 @@ async function signedUrl(objectPath, expiresIn) {
   return `${url}/storage/v1${relative.startsWith('/') ? '' : '/'}${relative}`;
 }
 
-module.exports = { BUCKET, isConfigured, insert, uploadObject, signedUrl };
+module.exports = { BUCKET, isConfigured, insert, select, update, uploadObject, signedUrl };
