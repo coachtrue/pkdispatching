@@ -19,9 +19,14 @@
 
   var STATUS_TONE = {
     new: 'new', verifying: 'progress', contacted: 'progress', qualified: 'progress',
-    approved: 'good', active: 'good', converted: 'good',
-    rejected: 'bad', lost: 'bad', paused: 'idle'
+    approved: 'good', active: 'good', converted: 'good', delivered: 'good', paid: 'good',
+    rejected: 'bad', lost: 'bad', failed: 'bad', cancelled: 'bad',
+    paused: 'idle',
+    booked: 'new', in_transit: 'progress', pending: 'progress'
   };
+
+  var LOAD_STATUSES = ['booked', 'in_transit', 'delivered', 'paid', 'cancelled'];
+  var PAYMENT_STATUSES = ['pending', 'paid', 'failed'];
 
   /* ================================================================
      DOM helpers — el() only ever sets text, never markup.
@@ -263,6 +268,346 @@
     return box;
   }
 
+  function fmtMoney(value) {
+    if (value === null || value === undefined || value === '') return '—';
+    var n = Number(value);
+    if (!isFinite(n)) return '—';
+    return '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  /* --- Carrier portal: account status + create/reset/enable/disable --- */
+  function renderPortalSection(container, data, summary) {
+    var section = el('div', 'dsection');
+    section.appendChild(el('h3', null, 'Carrier Portal'));
+
+    var account = data.portalAccount;
+    var statusRow = el('div', 'portal-status');
+    if (account) {
+      statusRow.appendChild(el('span', null, account.email));
+      statusRow.appendChild(el('span', 'portal-badge portal-badge--' + (account.is_active ? 'active' : 'inactive'),
+        account.is_active ? 'Active' : 'Disabled'));
+      statusRow.appendChild(el('span', 'muted', 'Last sign-in: ' + relative(account.last_login_at)));
+    } else {
+      statusRow.appendChild(el('span', 'muted', 'No portal account yet.'));
+    }
+    section.appendChild(statusRow);
+
+    var emailInput = null;
+    if (!account) {
+      var emailWrap = el('div');
+      emailWrap.style.marginTop = '.5rem';
+      emailWrap.appendChild(el('label', null, 'Portal email'));
+      emailInput = el('input');
+      emailInput.type = 'email';
+      emailInput.value = data.record.email || '';
+      emailInput.style.cssText = 'width:100%;padding:.5rem .6rem;border:1.5px solid var(--line);border-radius:var(--radius-sm);font:inherit;';
+      emailWrap.appendChild(emailInput);
+      section.appendChild(emailWrap);
+    }
+
+    var btnRow = el('div', 'logform__row');
+    btnRow.style.marginTop = '.6rem';
+
+    var createBtn = el('button', 'btn btn--sm btn--primary', account ? 'Reset password' : 'Create portal account');
+    createBtn.addEventListener('click', function () {
+      if (emailInput && !emailInput.value.trim()) { toast('Enter an email first.', true); return; }
+      createBtn.disabled = true;
+      api('portalAccount', {
+        body: { reference: summary.reference, email: emailInput ? emailInput.value : undefined }
+      }).then(function (res) {
+        toast(res.created ? 'Portal account created.' : 'Password reset.');
+        var old = $('#portalReveal', container);
+        if (old) old.parentNode.removeChild(old);
+
+        var revealWrap = el('div', null);
+        revealWrap.id = 'portalReveal';
+        revealWrap.appendChild(el('p', 'muted', 'Shown once — copy it now and send it to the carrier yourself. It cannot be shown again.'));
+        var reveal = el('div', 'portal-reveal');
+        var input = el('input');
+        input.type = 'text';
+        input.readOnly = true;
+        input.value = res.email + '   ' + res.password;
+        reveal.appendChild(input);
+        var copyBtn = el('button', 'btn btn--sm btn--ghost', 'Copy');
+        copyBtn.type = 'button';
+        copyBtn.addEventListener('click', function () {
+          input.select();
+          if (navigator.clipboard) navigator.clipboard.writeText(input.value).catch(function () {});
+          toast('Copied.');
+        });
+        reveal.appendChild(copyBtn);
+        revealWrap.appendChild(reveal);
+        section.appendChild(revealWrap);
+
+        return refreshAll();
+      }).catch(function (e) { toast(e.message, true); })
+        .finally(function () { createBtn.disabled = false; });
+    });
+    btnRow.appendChild(createBtn);
+
+    if (account) {
+      var toggleBtn = el('button', 'btn btn--sm btn--ghost', account.is_active ? 'Disable' : 'Enable');
+      toggleBtn.addEventListener('click', function () {
+        toggleBtn.disabled = true;
+        api('portalToggle', { body: { reference: summary.reference, active: !account.is_active } })
+          .then(function () {
+            toast(account.is_active ? 'Portal account disabled.' : 'Portal account enabled.');
+            return refreshAll();
+          })
+          .then(function () { openContact(summary); })
+          .catch(function (e) { toast(e.message, true); })
+          .finally(function () { toggleBtn.disabled = false; });
+      });
+      btnRow.appendChild(toggleBtn);
+    }
+
+    section.appendChild(btnRow);
+    container.appendChild(section);
+  }
+
+  /* --- Loads: table + add/edit form --- */
+  function renderLoadsSection(container, data, summary) {
+    var section = el('div', 'dsection');
+    section.appendChild(el('h3', null, 'Loads (' + data.loads.length + ')'));
+
+    if (data.loads.length) {
+      var table = el('table', 'mini-table');
+      var thead = el('thead');
+      var htr = el('tr');
+      ['Load #', 'Route', 'Rate', 'Status'].forEach(function (h) { htr.appendChild(el('th', null, h)); });
+      thead.appendChild(htr);
+      table.appendChild(thead);
+
+      var tbody = el('tbody');
+      data.loads.forEach(function (ld) {
+        var tr = el('tr');
+        tr.appendChild(el('td', null, ld.load_number || '—'));
+        var route = [ld.pickup_city, ld.pickup_state].filter(Boolean).join(', ') +
+          ' → ' + [ld.delivery_city, ld.delivery_state].filter(Boolean).join(', ');
+        tr.appendChild(el('td', null, route === ' → ' ? '—' : route));
+        tr.appendChild(el('td', 'num', fmtMoney(ld.rate)));
+        var statusTd = el('td');
+        statusTd.appendChild(statusPill(ld.status));
+        tr.appendChild(statusTd);
+        tr.addEventListener('click', function () { showLoadForm(ld); });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      section.appendChild(table);
+    } else {
+      section.appendChild(el('p', 'muted', 'No loads logged yet.'));
+    }
+
+    var addBtn = el('button', 'btn btn--sm btn--ghost', '+ Add load');
+    addBtn.style.marginTop = '.6rem';
+    var formHolder = el('div');
+    addBtn.addEventListener('click', function () { showLoadForm(null); });
+    section.appendChild(addBtn);
+    section.appendChild(formHolder);
+    container.appendChild(section);
+
+    function showLoadForm(existing) {
+      clear(formHolder);
+      var form = el('div', 'mini-form');
+
+      function field(label, name, type) {
+        var wrap = el('div');
+        wrap.appendChild(el('label', null, label));
+        var input = el(type === 'textarea' ? 'textarea' : 'input');
+        if (type && type !== 'textarea') input.type = type;
+        input.name = name;
+        if (existing && existing[name] !== undefined && existing[name] !== null) input.value = existing[name];
+        wrap.appendChild(input);
+        form.appendChild(wrap);
+        return input;
+      }
+
+      var loadNumber = field('Load #', 'load_number', 'text');
+      var broker = field('Broker', 'broker', 'text');
+      var pickupCity = field('Pickup city', 'pickup_city', 'text');
+      var pickupState = field('Pickup state', 'pickup_state', 'text');
+      var pickupDate = field('Pickup date', 'pickup_date', 'date');
+      var deliveryCity = field('Delivery city', 'delivery_city', 'text');
+      var deliveryState = field('Delivery state', 'delivery_state', 'text');
+      var deliveryDate = field('Delivery date', 'delivery_date', 'date');
+      var rate = field('Rate ($)', 'rate', 'number');
+      rate.step = '0.01'; rate.min = '0';
+
+      var statusWrap = el('div');
+      statusWrap.appendChild(el('label', null, 'Status'));
+      var statusSel = el('select');
+      LOAD_STATUSES.forEach(function (s) {
+        var opt = el('option', null, s);
+        opt.value = s;
+        if ((existing ? existing.status : 'booked') === s) opt.selected = true;
+        statusSel.appendChild(opt);
+      });
+      statusWrap.appendChild(statusSel);
+      form.appendChild(statusWrap);
+
+      var notesWrap = el('div', 'span2');
+      notesWrap.appendChild(el('label', null, 'Notes'));
+      var notes = el('textarea');
+      if (existing && existing.notes) notes.value = existing.notes;
+      notesWrap.appendChild(notes);
+      form.appendChild(notesWrap);
+
+      var actions = el('div', 'mini-form__actions');
+      var saveBtn = el('button', 'btn btn--sm btn--primary', existing ? 'Save changes' : 'Add load');
+      saveBtn.addEventListener('click', function () {
+        saveBtn.disabled = true;
+        api('loadSave', {
+          body: {
+            id: existing ? existing.id : undefined,
+            reference: summary.reference,
+            loadNumber: loadNumber.value,
+            broker: broker.value,
+            pickupCity: pickupCity.value,
+            pickupState: pickupState.value,
+            pickupDate: pickupDate.value,
+            deliveryCity: deliveryCity.value,
+            deliveryState: deliveryState.value,
+            deliveryDate: deliveryDate.value,
+            rate: rate.value,
+            status: statusSel.value,
+            notes: notes.value
+          }
+        }).then(function () {
+          toast(existing ? 'Load updated.' : 'Load added.');
+          openContact(summary);
+        }).catch(function (e) { toast(e.message, true); })
+          .finally(function () { saveBtn.disabled = false; });
+      });
+      actions.appendChild(saveBtn);
+
+      var cancelBtn = el('button', 'btn btn--sm btn--ghost', 'Cancel');
+      cancelBtn.addEventListener('click', function () { clear(formHolder); });
+      actions.appendChild(cancelBtn);
+      form.appendChild(actions);
+
+      formHolder.appendChild(form);
+    }
+  }
+
+  /* --- Payments: table + add/edit form --- */
+  function renderPaymentsSection(container, data, summary) {
+    var section = el('div', 'dsection');
+    section.appendChild(el('h3', null, 'Payments (' + data.payments.length + ')'));
+
+    if (data.payments.length) {
+      var table = el('table', 'mini-table');
+      var thead = el('thead');
+      var htr = el('tr');
+      ['Amount', 'Status', 'Method', 'Paid'].forEach(function (h) { htr.appendChild(el('th', null, h)); });
+      thead.appendChild(htr);
+      table.appendChild(thead);
+
+      var tbody = el('tbody');
+      data.payments.forEach(function (p) {
+        var tr = el('tr');
+        tr.appendChild(el('td', 'num', fmtMoney(p.amount)));
+        var statusTd = el('td');
+        statusTd.appendChild(statusPill(p.status));
+        tr.appendChild(statusTd);
+        tr.appendChild(el('td', null, p.method || '—'));
+        tr.appendChild(el('td', null, p.paid_at ? fmtDate(p.paid_at) : '—'));
+        tr.addEventListener('click', function () { showPaymentForm(p); });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      section.appendChild(table);
+    } else {
+      section.appendChild(el('p', 'muted', 'No payments logged yet.'));
+    }
+
+    var addBtn = el('button', 'btn btn--sm btn--ghost', '+ Add payment');
+    addBtn.style.marginTop = '.6rem';
+    var formHolder = el('div');
+    addBtn.addEventListener('click', function () { showPaymentForm(null); });
+    section.appendChild(addBtn);
+    section.appendChild(formHolder);
+    container.appendChild(section);
+
+    function showPaymentForm(existing) {
+      clear(formHolder);
+      var form = el('div', 'mini-form');
+
+      var amountWrap = el('div');
+      amountWrap.appendChild(el('label', null, 'Amount ($)'));
+      var amount = el('input');
+      amount.type = 'number'; amount.step = '0.01'; amount.min = '0';
+      if (existing) amount.value = existing.amount;
+      amountWrap.appendChild(amount);
+      form.appendChild(amountWrap);
+
+      var statusWrap = el('div');
+      statusWrap.appendChild(el('label', null, 'Status'));
+      var statusSel = el('select');
+      PAYMENT_STATUSES.forEach(function (s) {
+        var opt = el('option', null, s);
+        opt.value = s;
+        if ((existing ? existing.status : 'pending') === s) opt.selected = true;
+        statusSel.appendChild(opt);
+      });
+      statusWrap.appendChild(statusSel);
+      form.appendChild(statusWrap);
+
+      var methodWrap = el('div');
+      methodWrap.appendChild(el('label', null, 'Method'));
+      var method = el('input');
+      method.type = 'text';
+      method.placeholder = 'ACH, factoring, check…';
+      if (existing && existing.method) method.value = existing.method;
+      methodWrap.appendChild(method);
+      form.appendChild(methodWrap);
+
+      var paidWrap = el('div');
+      paidWrap.appendChild(el('label', null, 'Paid date'));
+      var paidAt = el('input');
+      paidAt.type = 'date';
+      if (existing && existing.paid_at) paidAt.value = String(existing.paid_at).slice(0, 10);
+      paidWrap.appendChild(paidAt);
+      form.appendChild(paidWrap);
+
+      var notesWrap = el('div', 'span2');
+      notesWrap.appendChild(el('label', null, 'Notes'));
+      var notes = el('textarea');
+      if (existing && existing.notes) notes.value = existing.notes;
+      notesWrap.appendChild(notes);
+      form.appendChild(notesWrap);
+
+      var actions = el('div', 'mini-form__actions');
+      var saveBtn = el('button', 'btn btn--sm btn--primary', existing ? 'Save changes' : 'Add payment');
+      saveBtn.addEventListener('click', function () {
+        if (!amount.value || Number(amount.value) <= 0) { toast('Enter an amount.', true); return; }
+        saveBtn.disabled = true;
+        api('paymentSave', {
+          body: {
+            id: existing ? existing.id : undefined,
+            reference: summary.reference,
+            amount: amount.value,
+            status: statusSel.value,
+            method: method.value,
+            paidAt: paidAt.value,
+            notes: notes.value
+          }
+        }).then(function () {
+          toast(existing ? 'Payment updated.' : 'Payment added.');
+          openContact(summary);
+        }).catch(function (e) { toast(e.message, true); })
+          .finally(function () { saveBtn.disabled = false; });
+      });
+      actions.appendChild(saveBtn);
+
+      var cancelBtn = el('button', 'btn btn--sm btn--ghost', 'Cancel');
+      cancelBtn.addEventListener('click', function () { clear(formHolder); });
+      actions.appendChild(cancelBtn);
+      form.appendChild(actions);
+
+      formHolder.appendChild(form);
+    }
+  }
+
   function openContact(summary) {
     var drawer = $('#drawer');
     drawer.hidden = false;
@@ -423,6 +768,10 @@
         docs.appendChild(el('p', 'muted', 'Links expire after one hour.'));
       }
       body.appendChild(docs);
+
+      renderPortalSection(body, data, summary);
+      renderLoadsSection(body, data, summary);
+      renderPaymentsSection(body, data, summary);
     }
 
     /* --- Log a communication --- */

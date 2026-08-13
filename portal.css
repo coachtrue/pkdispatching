@@ -1,0 +1,168 @@
+/* ==========================================================================
+   LP3 Dispatching — Carrier Portal
+
+   Same brand tokens and component language as admin.css (Dispatch Desk),
+   kept as its own file rather than shared so a change meant for staff never
+   accidentally reaches the carrier-facing page, and vice versa.
+   ========================================================================== */
+
+:root {
+  /* LP3 Dispatching palette — Brand Kit v1 section 02 */
+  --navy-900: #050505;
+  --navy-800: #050505;   /* Carbon Black */
+  --navy-700: #55585D;   /* Gunmetal */
+  --navy-600: #6d7075;
+  --amber-500: #1478E8;  /* Electric Blue — accent only */
+  --amber-400: #4a9df5;
+
+  --ink: #050505;
+  --ink-soft: #55585D;   /* Gunmetal */
+  --ink-mute: #86898e;
+
+  --line: #d8d9da;
+  --line-soft: #e7e8e9;
+  --surface: #ffffff;
+  --surface-alt: #f5f5f6;
+  --surface-tint: #E7E8E9;  /* Steel Silver, lightened */
+
+  --s-new:      #1d68d8;  --s-new-bg:      #e7f0fd;
+  --s-progress: #a2650b;  --s-progress-bg: #fdf1dc;
+  --s-good:     #12855a;  --s-good-bg:     #e4f4ec;
+  --s-bad:      #c0392b;  --s-bad-bg:      #fdecea;
+  --s-idle:     #5b6b7f;  --s-idle-bg:     #eef1f5;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 12px rgba(6,16,31,.07), 0 12px 32px rgba(6,16,31,.08);
+  --shadow-lg: 0 18px 50px rgba(6,16,31,.22);
+  --font: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-head: "Montserrat", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e6edf6; --ink-soft: #a9bacf; --ink-mute: #8296ae;
+    --line: #23324a; --line-soft: #1a273b;
+    --surface: #0e1928; --surface-alt: #0a1320; --surface-tint: #16243a;
+    --s-new-bg: #12233c; --s-progress-bg: #2e2410; --s-good-bg: #0f2a20;
+    --s-bad-bg: #2c1512; --s-idle-bg: #1a2434;
+    --s-new: #7fb2ff; --s-progress: #f0b95c;
+    --s-good: #4cc38a; --s-bad: #f08a7e; --s-idle: #9fb0c4;
+    --shadow: 0 6px 18px rgba(0,0,0,.45);
+    --shadow-lg: 0 20px 50px rgba(0,0,0,.6);
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0; font-family: var(--font); color: var(--ink);
+  background: var(--surface-alt); line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { margin: 0; letter-spacing: -.02em; font-family: var(--font-head); font-weight: 700; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--amber-500); outline-offset: 2px; border-radius: 4px; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+  padding: .6rem 1rem; border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: var(--navy-700); color: #fff; font-weight: 650; cursor: pointer;
+  transition: filter .15s ease;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn--primary { background: var(--amber-500); }
+.btn--ghost { background: transparent; color: var(--ink-soft); border-color: var(--line); }
+.btn--ghost:hover { background: var(--surface-tint); }
+.btn[disabled] { opacity: .55; pointer-events: none; }
+.linkish {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: var(--ink-mute); font-size: .86rem; text-decoration: underline;
+}
+.linkish:hover { color: var(--ink); }
+
+/* ---------- Login gate ---------- */
+.gate {
+  min-height: 100vh; display: grid; place-items: center; padding: 1.5rem;
+  background: linear-gradient(165deg, var(--navy-800), var(--navy-900));
+}
+.gate__card {
+  width: 100%; max-width: 380px; background: var(--surface);
+  border-radius: 16px; padding: 2rem; box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column; gap: .3rem;
+}
+.gate__logo { display: block; width: 150px; height: auto; margin: 0 auto .9rem; }
+.gate__brand { font-weight: 800; font-size: 1.15rem; letter-spacing: -.01em; text-align: center; }
+.gate__sub { color: var(--ink-mute); font-size: .88rem; margin: .1rem 0 1.2rem; text-align: center; }
+.gate label { font-size: .8rem; font-weight: 700; color: var(--ink-soft); }
+.gate input {
+  width: 100%; padding: .7rem .8rem; margin: .3rem 0 .8rem;
+  border: 1.5px solid var(--line); border-radius: var(--radius-sm); background: var(--surface);
+}
+.gate input:focus { outline: none; border-color: var(--amber-500); box-shadow: 0 0 0 3px rgba(20,120,232,.15); }
+.gate .btn { margin-top: .5rem; }
+.gate__err { color: var(--s-bad); font-size: .82rem; font-weight: 600; min-height: 1.1rem; margin: .2rem 0 0; }
+.gate__err:empty { min-height: 0; }
+.gate__foot { color: var(--ink-mute); font-size: .8rem; text-align: center; margin: 1.1rem 0 0; }
+
+/* ---------- App shell ---------- */
+.app { min-height: 100vh; }
+
+.topbar {
+  display: flex; gap: .8rem; align-items: center; padding: .9rem 1.4rem;
+  background: var(--navy-900); color: #fff;
+  position: sticky; top: 0; z-index: 5;
+}
+.topbar__logo { width: 34px; height: 34px; border-radius: 7px; flex: none; }
+.topbar__brand { display: flex; flex-direction: column; gap: 0; line-height: 1.25; }
+.topbar__title { font-weight: 800; font-size: .98rem; letter-spacing: -.01em; }
+.topbar__sub { font-size: .78rem; color: #a9bacf; }
+.topbar .linkish { margin-left: auto; color: #a9bacf; }
+.topbar .linkish:hover { color: #fff; }
+
+.main { max-width: 1100px; margin: 0 auto; padding: 1.6rem 1.4rem 3rem; }
+
+.dsection { margin-bottom: 1.8rem; }
+.dsection h2 { font-size: 1.15rem; margin-bottom: .1rem; }
+
+/* ---------- Table ---------- */
+.tablewrap { margin-top: .8rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow-x: auto; }
+.grid { width: 100%; border-collapse: collapse; font-size: .89rem; min-width: 640px; }
+.grid th {
+  text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--ink-mute); font-weight: 700; padding: .7rem .9rem;
+  border-bottom: 1px solid var(--line); white-space: nowrap; background: var(--surface-alt);
+  position: sticky; top: 0;
+}
+.grid td { padding: .72rem .9rem; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+.grid tbody tr:last-child td { border-bottom: 0; }
+.grid .num { text-align: right; font-variant-numeric: tabular-nums; }
+.empty { padding: 2.4rem; text-align: center; color: var(--ink-mute); }
+
+.pill {
+  display: inline-block; padding: .16rem .55rem; border-radius: 999px;
+  font-size: .72rem; font-weight: 750; text-transform: capitalize; white-space: nowrap;
+  background: var(--s-idle-bg); color: var(--s-idle);
+}
+.pill--new      { background: var(--s-new-bg);      color: var(--s-new); }
+.pill--progress { background: var(--s-progress-bg); color: var(--s-progress); }
+.pill--good     { background: var(--s-good-bg);     color: var(--s-good); }
+.pill--bad      { background: var(--s-bad-bg);      color: var(--s-bad); }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 14px);
+  background: var(--navy-900); color: #fff; padding: .75rem 1.2rem;
+  border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); z-index: 90;
+  font-size: .88rem; font-weight: 600; opacity: 0;
+  transition: opacity .2s ease, transform .2s ease; max-width: min(90vw, 440px);
+}
+.toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+.toast--error { background: var(--s-bad); }
+
+@media (max-width: 560px) {
+  .grid { min-width: 0; }
+  .main { padding: 1.2rem .9rem 2.4rem; }
+}

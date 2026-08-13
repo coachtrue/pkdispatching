@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Carrier Portal — LP3 Dispatching</title>
+<link rel="icon" type="image/png" href="assets/lp3-icon.png">
+<link rel="apple-touch-icon" href="assets/lp3-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@700;800&family=Rajdhani:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="portal.css">
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div class="gate" id="gate" hidden>
+  <form class="gate__card" id="loginForm">
+    <img class="gate__logo" src="assets/lp3-lockup.png" alt="LP3 Dispatching" width="420" height="420">
+    <div class="gate__brand">Carrier Portal</div>
+    <p class="gate__sub">Your loads and payments, in one place.</p>
+    <label for="email">Email</label>
+    <input id="email" type="email" autocomplete="username" required autofocus>
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password" required>
+    <p class="gate__err" id="loginError" role="alert"></p>
+    <button class="btn btn--primary" type="submit"><span id="loginLabel">Sign in</span></button>
+    <p class="gate__foot">Don't have a login? Ask your dispatcher — they'll set one up for you.</p>
+  </form>
+</div>
+
+<!-- ================= APP ================= -->
+<div class="app" id="app" hidden>
+  <header class="topbar">
+    <img class="topbar__logo" src="assets/lp3-icon.png" alt="LP3 Dispatching" width="256" height="256">
+    <div class="topbar__brand">
+      <span class="topbar__title">Carrier Portal</span>
+      <span class="topbar__sub" id="carrierName"></span>
+    </div>
+    <button class="linkish" id="logoutBtn">Sign out</button>
+  </header>
+
+  <main class="main">
+    <section class="dsection">
+      <h2>Loads</h2>
+      <div class="tablewrap">
+        <table class="grid" id="loadsTable">
+          <thead>
+            <tr>
+              <th>Load #</th>
+              <th>Broker</th>
+              <th>Route</th>
+              <th>Pickup</th>
+              <th>Delivery</th>
+              <th class="num">Rate</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="loadsRows"></tbody>
+        </table>
+        <p class="empty" id="loadsEmpty" hidden>No loads on file yet.</p>
+      </div>
+    </section>
+
+    <section class="dsection">
+      <h2>Payments</h2>
+      <div class="tablewrap">
+        <table class="grid" id="paymentsTable">
+          <thead>
+            <tr>
+              <th class="num">Amount</th>
+              <th>Status</th>
+              <th>Method</th>
+              <th>Paid</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="paymentsRows"></tbody>
+        </table>
+        <p class="empty" id="paymentsEmpty" hidden>No payments on file yet.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="portal.js"></script>
+</body>
+</html>

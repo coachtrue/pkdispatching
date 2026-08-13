@@ -36,8 +36,8 @@
   --radius-sm: 8px;
   --shadow: 0 4px 12px rgba(6,16,31,.07), 0 12px 32px rgba(6,16,31,.08);
   --shadow-lg: 0 18px 50px rgba(6,16,31,.22);
-  --font: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-head: Barlow, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-head: "Montserrat", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -62,7 +62,7 @@ body {
   background: var(--surface-alt); line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3 { margin: 0; letter-spacing: -.02em; }
+h1, h2, h3 { margin: 0; letter-spacing: -.02em; font-family: var(--font-head); font-weight: 700; }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--amber-500); outline-offset: 2px; border-radius: 4px; }
 
@@ -269,6 +269,47 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .doc__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .doc a { color: var(--navy-600); font-weight: 650; white-space: nowrap; }
+
+/* Carrier portal: account status, credential reveal, loads/payments */
+.portal-status { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; font-size: .89rem; }
+.portal-badge { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; padding: .18rem .5rem; border-radius: 999px; }
+.portal-badge--active { background: var(--s-good-bg); color: var(--s-good); }
+.portal-badge--inactive { background: var(--s-idle-bg); color: var(--s-idle); }
+.portal-reveal {
+  display: flex; align-items: center; gap: .5rem; margin-top: .6rem; padding: .65rem .75rem;
+  background: var(--s-good-bg); border: 1px dashed var(--s-good); border-radius: var(--radius-sm);
+}
+.portal-reveal input {
+  flex: 1; min-width: 0; font: inherit; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: transparent; border: none; color: var(--ink); letter-spacing: .02em;
+}
+.portal-reveal input:focus { outline: none; }
+
+.mini-table { width: 100%; border-collapse: collapse; font-size: .85rem; margin-top: .6rem; }
+.mini-table th {
+  text-align: left; padding: .4rem .55rem; font-size: .68rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .05em; color: var(--ink-mute);
+  border-bottom: 1px solid var(--line);
+}
+.mini-table td { padding: .5rem .55rem; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+.mini-table tbody tr { cursor: pointer; }
+.mini-table tbody tr:hover { background: var(--surface-tint); }
+.mini-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.mini-form {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem;
+  margin-top: .7rem; padding: .8rem; background: var(--surface-alt); border-radius: var(--radius-sm);
+}
+.mini-form label { display: block; font-size: .74rem; font-weight: 750; color: var(--ink-soft); margin-bottom: .22rem; }
+.mini-form input, .mini-form select, .mini-form textarea {
+  width: 100%; padding: .5rem .6rem; border: 1.5px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--surface); font: inherit; font-size: .87rem;
+}
+.mini-form input:focus, .mini-form select:focus, .mini-form textarea:focus {
+  outline: none; border-color: var(--navy-600); box-shadow: 0 0 0 3px rgba(27,56,98,.14);
+}
+.mini-form .span2 { grid-column: 1 / -1; }
+.mini-form__actions { grid-column: 1 / -1; display: flex; gap: .5rem; margin-top: .2rem; }
 
 /* Log form */
 .logform { display: grid; gap: .55rem; }

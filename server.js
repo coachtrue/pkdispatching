@@ -337,9 +337,10 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && url.pathname === '/api/onboarding') {
       return await handleOnboarding(req, res);
     }
-    // The admin CRM runs the very same handler Vercel will execute, wrapped
-    // in a minimal res shim, so local behaviour matches production exactly.
-    if (url.pathname === '/api/crm') {
+    // The admin CRM and carrier portal run the very same handlers Vercel
+    // will execute, wrapped in a minimal res shim, so local behaviour
+    // matches production exactly.
+    if (url.pathname === '/api/crm' || url.pathname === '/api/portal') {
       const shim = Object.assign(res, {
         status(code) { res.statusCode = code; return res; },
         json(payload) {
@@ -349,7 +350,8 @@ const server = http.createServer(async (req, res) => {
           return res;
         }
       });
-      return await require('./api/crm.js')(req, shim);
+      const modulePath = url.pathname === '/api/crm' ? './api/crm.js' : './api/portal.js';
+      return await require(modulePath)(req, shim);
     }
     if (req.method === 'GET' && url.pathname === '/api/health') {
       return sendJson(res, 200, { ok: true, uptime: process.uptime() });

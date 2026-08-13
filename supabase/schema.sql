@@ -222,3 +222,86 @@ from public.carriers c
 left join public.carrier_documents d on d.carrier_id = c.id
 group by c.id
 order by c.created_at desc;
+
+-- =====================================================================
+-- Carrier Portal
+-- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- Carrier accounts: portal login credentials, one per carrier contact.
+-- Staff create these from the CRM (api/crm.js, action=portalAccount) —
+-- there is no public signup. Passwords are scrypt-hashed (salt:hash hex,
+-- see api/_portal_auth.js) and never stored or logged in the clear.
+-- ---------------------------------------------------------------------
+create table if not exists public.carrier_accounts (
+  id             uuid primary key default gen_random_uuid(),
+  carrier_id     uuid not null references public.carriers (id) on delete cascade,
+  reference      text not null,
+  email          text not null unique,
+  password_hash  text not null,
+  is_active      boolean not null default true,
+  created_at     timestamptz not null default now(),
+  last_login_at  timestamptz
+);
+
+create index if not exists carrier_accounts_carrier_id_idx on public.carrier_accounts (carrier_id);
+create index if not exists carrier_accounts_email_idx      on public.carrier_accounts (email);
+
+alter table public.carrier_accounts enable row level security;
+
+-- ---------------------------------------------------------------------
+-- Loads: one row per dispatched load. Staff enter these from the CRM;
+-- the portal (api/portal.js) shows only rows matching its own session's
+-- carrier_id, resolved server-side from the signed session token — never
+-- from anything the client sends.
+-- ---------------------------------------------------------------------
+create table if not exists public.loads (
+  id              uuid primary key default gen_random_uuid(),
+  carrier_id      uuid not null references public.carriers (id) on delete cascade,
+  reference       text not null,
+  load_number     text,
+  broker          text,
+  pickup_city     text,
+  pickup_state    text,
+  pickup_date     date,
+  delivery_city   text,
+  delivery_state  text,
+  delivery_date   date,
+  rate            numeric(10,2),
+  status          text not null default 'booked'
+                    check (status in ('booked', 'in_transit', 'delivered', 'paid', 'cancelled')),
+  notes           text,
+  created_by      text not null default 'admin',
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+
+create index if not exists loads_carrier_id_idx  on public.loads (carrier_id, created_at desc);
+create index if not exists loads_reference_idx   on public.loads (reference);
+
+alter table public.loads enable row level security;
+
+-- ---------------------------------------------------------------------
+-- Payments: settlements owed or paid to the carrier. Optionally tied to
+-- one load, or a standalone entry (e.g. a lump-sum settlement).
+-- ---------------------------------------------------------------------
+create table if not exists public.payments (
+  id           uuid primary key default gen_random_uuid(),
+  carrier_id   uuid not null references public.carriers (id) on delete cascade,
+  reference    text not null,
+  load_id      uuid references public.loads (id) on delete set null,
+  amount       numeric(10,2) not null,
+  status       text not null default 'pending'
+                 check (status in ('pending', 'paid', 'failed')),
+  method       text,
+  paid_at      timestamptz,
+  notes        text,
+  created_by   text not null default 'admin',
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists payments_carrier_id_idx on public.payments (carrier_id, created_at desc);
+create index if not exists payments_reference_idx  on public.payments (reference);
+
+alter table public.payments enable row level security;
+

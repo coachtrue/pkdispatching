@@ -6,7 +6,7 @@ Dispatching) — dispatch for owner-operators and small fleets.
 > **Keep Moving. Keep Earning.**
 
 Plain HTML, CSS, and JavaScript — no build step, no framework, no bundler.
-Deploys to Vercel as a static site plus four small serverless functions.
+Deploys to Vercel as a static site plus five small serverless functions.
 
 ```
 assets/            brand artwork + the guidelines document
@@ -16,6 +16,9 @@ app.js             forms, validation, multi-step onboarding, file uploads
 admin.html         Dispatch Desk — the admin CRM
 admin.css          dashboard styling
 admin.js           dashboard behaviour (textContent only — see note below)
+portal.html        the carrier-facing Carrier Portal
+portal.css         portal styling
+portal.js          portal behaviour (read-only, textContent only)
 vercel.json        routing + security headers
 supabase/
   schema.sql       tables, indexes, private bucket, RLS — run this once
@@ -23,8 +26,10 @@ api/
   leads.js         quick call-back + contact form    -> leads table
   upload.js        one document per request          -> private Supabase bucket
   onboarding.js    express onboarding submission     -> carriers + carrier_documents
-  crm.js           the CRM back end (auth + all admin actions)
+  crm.js           the CRM back end (auth + all admin actions, incl. loads/payments)
+  portal.js        the carrier portal back end (its own auth + transactions)
   _auth.js         admin session signing and verification
+  _portal_auth.js  carrier portal session signing + per-account password hashing
   _ghl.js          GoHighLevel push (contacts, custom fields, pipeline)
   _supabase.js     tiny REST client (no dependencies)
   _lib.js          shared helpers
@@ -91,10 +96,12 @@ prefixes, so anything issued before either rename still resolves.
 
 Dashboard → SQL Editor → New query → paste all of `supabase/schema.sql` → Run.
 
-That creates the `leads`, `carriers`, `carrier_documents`, and `activities` tables, the
-`crm_contacts` and `carrier_intake_queue` views the dashboard reads, and a **private**
-`carrier-packets` storage bucket. It's idempotent, so re-running it is safe — including
-on an existing database, where it only adds what's missing.
+That creates the `leads`, `carriers`, `carrier_documents`, `activities`, `carrier_accounts`,
+`loads`, and `payments` tables, the `crm_contacts` and `carrier_intake_queue` views the
+dashboard reads, and a **private** `carrier-packets` storage bucket. It's idempotent, so
+re-running it is safe — including on an existing database, where it only adds what's
+missing. If you set this project up before the Carrier Portal existed, re-run it once to
+pick up the three new tables.
 
 ### 2. Vercel — set the environment variables
 
@@ -105,6 +112,7 @@ Settings → Environment Variables:
 | `SUPABASE_URL` | Supabase → Settings → API → Project URL | Yes |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → `service_role` key | Yes |
 | `ADMIN_PASSWORD` | Invent a strong one — it opens the CRM | Yes |
+| `PORTAL_SESSION_SECRET` | Any long random string (e.g. `openssl rand -hex 32`) | Only for the Carrier Portal |
 | `NOTIFY_WEBHOOK` | Your Slack incoming webhook or Zapier catch hook | Recommended |
 
 > **The `service_role` key bypasses Row Level Security.** It is only ever read inside
@@ -238,6 +246,39 @@ them, so treat the webhook channel as sensitive.
 
 ---
 
+## Carrier Portal
+
+Live at **`/portal`** on your deployment. A carrier signs in with an email and password —
+their own, not `ADMIN_PASSWORD` — and sees exactly two things: their loads and their
+payments. Nothing else in the CRM is reachable from here.
+
+**There's no public signup.** Every account is created by staff, from inside a carrier's
+record in Dispatch Desk (`/admin`) — open the carrier, scroll to **Carrier Portal**, click
+**Create portal account**. That generates a password and shows it to you **once**; nothing
+stores or logs it in the clear, so copy it and send it to the carrier yourself (text, email,
+however you'd normally reach them). Lost it? Click **Reset password** for a new one. Need to
+cut off access — a carrier who stopped working with you, a wrong email — click **Disable**;
+their password stays hashed in the database but can no longer sign in, and re-enabling
+needs no reset.
+
+**Loads and payments are staff-entered.** There's nowhere in this codebase they get created
+automatically — add them from the same carrier record in Dispatch Desk (**+ Add load**,
+**+ Add payment**), and they show up in that carrier's portal immediately. A load's status
+runs `booked → in_transit → delivered → paid` (or `cancelled`); a payment's runs
+`pending → paid` (or `failed`).
+
+**How access works.** Deliberately a separate system from `api/_auth.js`'s single shared
+admin password: `api/_portal_auth.js` hashes each carrier's password individually
+(scrypt, random salt per account — Node's built-in crypto, no dependency) and signs a
+session cookie scoped to that one account. Every request that returns carrier data resolves
+`carrier_id` **server-side**, from the account the signed cookie names — never from
+anything the client sends — so there's no request shape that lets one carrier read
+another's loads or payments. `PORTAL_SESSION_SECRET` is required and has no derived
+fallback (unlike `ADMIN_PASSWORD`'s), because there's no single password here to derive
+one from.
+
+---
+
 ## Run it locally
 
 ```bash
@@ -350,6 +391,7 @@ Server/function environment variables:
 | `SUPABASE_URL` | `api/*` | Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | `api/*` | Server-only key; bypasses RLS |
 | `SUPABASE_BUCKET` | `api/upload.js` | Defaults to `carrier-packets` |
+| `PORTAL_SESSION_SECRET` | `api/portal.js` | Signs carrier portal session cookies — required for `/portal` |
 | `NOTIFY_WEBHOOK` | `api/*` | Real-time submission alerts |
 | `PORT`, `DATA_DIR` | `server.js` | Local dev only |
 
