@@ -1,32 +1,33 @@
 /* ==========================================================================
-   LP3 Dispatching brand palette — Brand Guidelines v1.0, section 03.
-   Ink Navy #0E1F33 · Steel #445468 · Signal Amber #F3A73A · Concrete #ECEAE3
+   LP3 Dispatching brand palette — Brand Kit v1, section 02.
+   Electric Blue #1478E8 · Deep Blue #0752B8 · Carbon Black #050505 ·
+   Steel Silver #C7C9CC · Gunmetal #55585D · Clean White #FFFFFF
 
-   Amber is an accent only: monogram, dividers, CTAs. Never a large background
-   field — at that scale it reads as a warning label, not a brand colour.
+   Blue is LP3's recognition colour — accent only: CTAs, highlights, dividers.
+   Black and silver carry the heavy-duty transportation feel everywhere else.
    ========================================================================== */
 :root {
-  --navy-900: #060f1c;   /* deepened Ink Navy, for gradients and footer */
-  --navy-800: #0E1F33;   /* Ink Navy — the brand primary */
-  --navy-700: #16304d;
-  --navy-600: #274866;
-  --navy-500: #445468;   /* Steel */
+  --navy-900: #050505;   /* Carbon Black — deepest, gradients and footer */
+  --navy-800: #050505;   /* Carbon Black — the brand primary dark */
+  --navy-700: #55585D;   /* Gunmetal */
+  --navy-600: #6d7075;   /* Gunmetal, lightened a step */
+  --navy-500: #55585D;   /* Gunmetal, aliased as "Steel" throughout */
 
-  --amber-500: #F3A73A;  /* Signal Amber */
-  --amber-400: #f7bd68;
-  --amber-600: #d18d22;
+  --amber-500: #1478E8;  /* Electric Blue */
+  --amber-400: #4a9df5;  /* Electric Blue, lightened for text on dark */
+  --amber-600: #0752B8;  /* Deep Blue */
 
-  --concrete: #ECEAE3;   /* Concrete — section panels */
+  --concrete: #C7C9CC;   /* Steel Silver — section panels */
 
-  --ink: #0E1F33;        /* body copy sits on Ink Navy, per the palette */
-  --ink-soft: #445468;   /* Steel */
-  --ink-mute: #6b7b8a;
+  --ink: #050505;        /* body copy sits on Carbon Black, per the palette */
+  --ink-soft: #55585D;   /* Gunmetal */
+  --ink-mute: #7d8085;
 
-  --line: #ddd9d0;
-  --line-soft: #eceae3;
+  --line: #d8d9da;
+  --line-soft: #e7e8e9;
   --surface: #ffffff;
-  --surface-alt: #f5f4f0;
-  --surface-tint: #ECEAE3;
+  --surface-alt: #f5f5f6;
+  --surface-tint: #E7E8E9;
 
   --green: #12855a;
   --green-soft: #e6f4ee;
@@ -43,13 +44,14 @@
 
   --wrap: 1180px;
 
-  /* Typography — Brand Guidelines section 04. Three roles, and body copy is
-     never set in the display face. Arial is the approved fallback for each,
-     so the site needs no webfont; adding Archivo Black / Barlow / Inter later
-     upgrades it without touching any rule. */
-  --font-display: "Archivo Black", "Arial Black", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-head: Barlow, "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* Typography — Brand Kit v1 section 02. Three roles: Montserrat for
+     headlines (ExtraBold for h1, Bold for h2-h4), Inter for body copy,
+     Rajdhani for load numbers, rates and stats. Loaded via Google Fonts
+     in the <head>; the system stack is just the fallback while it loads. */
+  --font-display: "Montserrat", "Arial Black", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-head: "Montserrat", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-accent: "Rajdhani", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -84,7 +86,7 @@ h1, h2, h3, h4 {
   font-family: var(--font-head); font-weight: 700;
 }
 h1 {
-  font-family: var(--font-display); font-weight: 400;
+  font-family: var(--font-display); font-weight: 800;
   text-transform: uppercase; letter-spacing: -.015em;
   font-size: clamp(1.8rem, 4.2vw, 3rem); line-height: 1.08;
 }
@@ -336,7 +338,7 @@ input.is-invalid, select.is-invalid, textarea.is-invalid {
   padding-block: 1.9rem;
 }
 .trust__item { display: flex; flex-direction: column; gap: .2rem; }
-.trust__item strong { color: var(--amber-500); font-size: 1.22rem; letter-spacing: -.01em; }
+.trust__item strong { color: var(--amber-500); font-size: 1.22rem; letter-spacing: -.01em; font-family: var(--font-accent); font-weight: 600; }
 .trust__item span { font-size: .86rem; line-height: 1.5; color: #a9bcd2; }
 
 /* ---------- Sections ---------- */
@@ -439,7 +441,7 @@ input.is-invalid, select.is-invalid, textarea.is-invalid {
 }
 .plan__head h3 { font-size: 1.18rem; margin-bottom: .5rem; }
 .plan__price { display: flex; align-items: baseline; gap: .4rem; flex-wrap: wrap; margin-bottom: .4rem; }
-.plan__num { font-size: 2.5rem; font-weight: 800; letter-spacing: -.03em; color: var(--navy-800); line-height: 1; }
+.plan__num { font-size: 2.5rem; font-weight: 600; letter-spacing: -.03em; color: var(--navy-800); line-height: 1; font-family: var(--font-accent); }
 .plan__unit { font-size: .85rem; color: var(--ink-mute); font-weight: 600; }
 .plan__desc { font-size: .88rem; color: var(--ink-soft); }
 .plan__list { list-style: none; padding: 0; margin: 1.1rem 0 1.5rem; display: grid; gap: .55rem; flex: 1; }

@@ -7,23 +7,23 @@
    ========================================================================== */
 
 :root {
-  /* LP3 Dispatching palette — Brand Guidelines v1.0 section 03 */
-  --navy-900: #060f1c;
-  --navy-800: #0E1F33;   /* Ink Navy */
-  --navy-700: #16304d;
-  --navy-600: #274866;
-  --amber-500: #F3A73A;  /* Signal Amber — accent only */
-  --amber-400: #f7bd68;
+  /* LP3 Dispatching palette — Brand Kit v1 section 02 */
+  --navy-900: #050505;
+  --navy-800: #050505;   /* Carbon Black */
+  --navy-700: #55585D;   /* Gunmetal */
+  --navy-600: #6d7075;
+  --amber-500: #1478E8;  /* Electric Blue — accent only */
+  --amber-400: #4a9df5;
 
-  --ink: #0E1F33;
-  --ink-soft: #445468;   /* Steel */
-  --ink-mute: #7688a0;
+  --ink: #050505;
+  --ink-soft: #55585D;   /* Gunmetal */
+  --ink-mute: #86898e;
 
-  --line: #ddd9d0;
-  --line-soft: #eceae3;
+  --line: #d8d9da;
+  --line-soft: #e7e8e9;
   --surface: #ffffff;
-  --surface-alt: #f5f4f0;
-  --surface-tint: #ECEAE3;  /* Concrete */
+  --surface-alt: #f5f5f6;
+  --surface-tint: #E7E8E9;  /* Steel Silver, lightened */
 
   /* Semantic status — deliberately separate from the amber brand accent. */
   --s-new:      #1d68d8;  --s-new-bg:      #e7f0fd;
