@@ -1,8 +1,8 @@
 {
-  "name": "haulvera",
+  "name": "lp3-dispatching",
   "version": "1.0.0",
   "private": true,
-  "description": "Landing page and carrier intake for Haulvera, a freight dispatch service.",
+  "description": "Landing page and carrier intake for LP3 Dispatching, a freight dispatch service.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

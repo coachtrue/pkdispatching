@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Haulvera — static host + carrier intake API.
+ * LP3 Dispatching — static host + carrier intake API.
  *
  * Zero dependencies: run it with `node server.js` on any Node 18+ install.
  *
@@ -68,7 +68,7 @@ function reference() {
   const stamp = String(now.getFullYear()).slice(2) +
     String(now.getMonth() + 1).padStart(2, '0') +
     String(now.getDate()).padStart(2, '0');
-  return `HV-${stamp}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+  return `LP3-${stamp}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 }
 
 /** Strip directories and anything that isn't a safe filename character. */
@@ -193,7 +193,7 @@ async function handleUpload(req, res, url) {
   const data = await readBody(req, MAX_FILE_BYTES);
   if (!data.length) return sendJson(res, 400, { error: 'Empty file.' });
 
-  const ref = /^(?:HV|PK)-\d{6}-[A-Z0-9]{5,6}$/.test(url.searchParams.get('reference') || '')
+  const ref = /^(?:LP3|HV|PK)-\d{6}-[A-Z0-9]{5,6}$/.test(url.searchParams.get('reference') || '')
     ? url.searchParams.get('reference')
     : 'unfiled';
 
@@ -237,7 +237,7 @@ async function handleOnboarding(req, res) {
     return sendJson(res, 400, { error: `Missing required field(s): ${missing.join(', ')}` });
   }
 
-  const ref = String(fields.reference || '').match(/^(?:HV|PK)-\d{6}-[A-Z0-9]{5,6}$/)
+  const ref = String(fields.reference || '').match(/^(?:LP3|HV|PK)-\d{6}-[A-Z0-9]{5,6}$/)
     ? fields.reference
     : reference();
 
@@ -317,7 +317,7 @@ async function serveStatic(req, res, pathname) {
   }
 
   res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
-  res.end('<h1>404 — Not found</h1><p><a href="/">Back to Haulvera</a></p>');
+  res.end('<h1>404 — Not found</h1><p><a href="/">Back to LP3 Dispatching</a></p>');
 }
 
 /* ------------------------------------------------------------------ *
@@ -363,7 +363,7 @@ const server = http.createServer(async (req, res) => {
     if (!res.headersSent) {
       sendJson(res, err.statusCode || 500, {
         error: err.statusCode === 413
-          ? 'File is larger than 4 MB. Email it to packets@haulvera.com instead.'
+          ? 'File is larger than 4 MB. Email it to packets@pkdispatching.com instead.'
           : 'Server error.'
       });
     }
@@ -374,7 +374,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Haulvera running at http://localhost:${PORT}`);
+  console.log(`LP3 Dispatching running at http://localhost:${PORT}`);
   console.log(`Submissions -> ${DATA_DIR}`);
   if (!NOTIFY_WEBHOOK) console.log('Set NOTIFY_WEBHOOK to forward submissions to Slack/Zapier/your CRM.');
 });

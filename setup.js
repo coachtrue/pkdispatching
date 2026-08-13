@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * Haulvera — one-shot placeholder replacement.
+ * LP3 Dispatching — one-shot placeholder replacement.
  *
  * Swaps every placeholder phone number, email address, and domain across the
  * whole project in one pass, so you don't have to hunt through six files.
  *
  *   node setup.js --phone "(214) 555-8890" \
- *                 --email dispatch@haulvera.com \
- *                 --packets packets@haulvera.com \
- *                 --domain haulvera.com
+ *                 --email dispatch@pkdispatching.com \
+ *                 --packets packets@pkdispatching.com \
+ *                 --domain pkdispatching.com
  *
  * Only --phone is required; anything you leave out keeps its current value.
  * Run with --check to see what would change without writing anything.
@@ -38,12 +38,12 @@ const FILES = [
  * Update these only if you've already changed them by hand.
  * ------------------------------------------------------------------ */
 const CURRENT = {
-  phoneDisplay: '(555) 555-0123',
-  phoneE164: '+15555550123',
-  phoneDashed: '+1-555-555-0123',
-  email: 'dispatch@haulvera.com',
-  packets: 'packets@haulvera.com',
-  domain: 'haulvera.com'
+  phoneDisplay: '(888) 489-5187',
+  phoneE164: '+18884895187',
+  phoneDashed: '+1-888-489-5187',
+  email: 'dispatch@pkdispatching.com',
+  packets: 'packets@pkdispatching.com',
+  domain: 'pkdispatching.com'
 };
 
 /* ------------------------------------------------------------------ *
@@ -73,7 +73,7 @@ function fail(message) {
 
 function usage() {
   console.log(`
-  Haulvera setup — replace the placeholder contact details.
+  LP3 Dispatching setup — replace the placeholder contact details.
 
     node setup.js --phone "(214) 555-8890" [options]
 
@@ -134,7 +134,7 @@ const phone = args.phone ? normalizePhone(args.phone) : null;
 if (args.email && !validEmail(args.email)) fail(`"${args.email}" isn't a valid email address.`);
 if (args.packets && !validEmail(args.packets)) fail(`"${args.packets}" isn't a valid email address.`);
 if (args.domain && !validDomain(args.domain)) {
-  fail(`"${args.domain}" should be a bare domain like haulvera.com — no https://, no trailing slash.`);
+  fail(`"${args.domain}" should be a bare domain like pkdispatching.com — no https://, no trailing slash.`);
 }
 
 // Order matters: replace the longer, more specific strings first so a domain
@@ -151,7 +151,7 @@ if (args.domain)  replacements.push(['domain',         CURRENT.domain,  args.dom
 
 if (!replacements.length) fail('Nothing to do — pass at least one of --phone, --email, --packets, --domain.');
 
-console.log(`\n  Haulvera setup${args.check ? '  (dry run — nothing will be written)' : ''}\n`);
+console.log(`\n  LP3 Dispatching setup${args.check ? '  (dry run — nothing will be written)' : ''}\n`);
 
 let grandTotal = 0;
 const perLabel = new Map();
@@ -189,6 +189,28 @@ for (const [label, count] of perLabel) {
 if (!grandTotal) {
   console.log('    Nothing matched. Values may already be updated.\n');
   process.exit(0);
+}
+
+/* ------------------------------------------------------------------ *
+ * Record the new values as "current", so running this again to correct
+ * a typo actually finds something to replace.
+ * ------------------------------------------------------------------ */
+if (!args.check && grandTotal) {
+  const self = path.join(ROOT, 'setup.js');
+  let source = fs.readFileSync(self, 'utf8');
+  const next = {
+    phoneDisplay: phone ? phone.display : CURRENT.phoneDisplay,
+    phoneE164: phone ? phone.e164 : CURRENT.phoneE164,
+    phoneDashed: phone ? phone.dashed : CURRENT.phoneDashed,
+    email: args.email || CURRENT.email,
+    packets: args.packets || CURRENT.packets,
+    domain: args.domain || CURRENT.domain
+  };
+  const block = `const CURRENT = {\n` +
+    Object.entries(next).map(([k, v]) => `  ${k}: '${v}'`).join(',\n') +
+    `\n};`;
+  const updated = source.replace(/const CURRENT = \{[\s\S]*?\n\};/, block);
+  if (updated !== source) fs.writeFileSync(self, updated, 'utf8');
 }
 
 console.log(`\n  ${args.check ? 'Would replace' : '✓ Replaced'} ${grandTotal} occurrence(s) across the project.`);

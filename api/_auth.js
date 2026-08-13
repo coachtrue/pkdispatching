@@ -19,7 +19,7 @@
 
 const crypto = require('crypto');
 
-const COOKIE = 'hv_admin';
+const COOKIE = 'lp3_admin';
 const TTL_SECONDS = 60 * 60 * 12; // 12 hours
 
 function password() {

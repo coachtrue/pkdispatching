@@ -1,5 +1,5 @@
 -- =====================================================================
--- Haulvera — carrier intake schema
+-- LP3 Dispatching — carrier intake schema
 -- Run once in the Supabase SQL editor (Dashboard → SQL Editor → New query).
 -- Safe to re-run: everything is IF NOT EXISTS / idempotent.
 -- =====================================================================

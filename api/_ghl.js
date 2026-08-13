@@ -39,7 +39,7 @@ const FIELDS = {
   avoid_areas:      { name: 'Avoided Areas',       dataType: 'TEXT' },
   factoring:        { name: 'Factoring Company',   dataType: 'TEXT' },
   availability:     { name: 'Availability',        dataType: 'TEXT' },
-  hv_reference:     { name: 'Haulvera Reference',        dataType: 'TEXT' },
+  hv_reference:     { name: 'LP3 Reference',        dataType: 'TEXT' },
   packet_url:       { name: 'Carrier Packet',      dataType: 'TEXT' },
   documents_on_file:{ name: 'Documents On File',   dataType: 'NUMERICAL' }
 };
@@ -124,7 +124,7 @@ async function upsertContact(input) {
     companyName: input.companyName || undefined,
     city: input.city || undefined,
     state: input.state || undefined,
-    source: input.source || 'haulvera.com',
+    source: input.source || 'LP3 Dispatching website',
     tags: (input.tags || []).filter(Boolean).map((t) => String(t).toLowerCase()),
     customFields: customFields(input.fields || {})
   };
@@ -178,7 +178,7 @@ async function push(kind, data, documentLinks) {
   const isCarrier = kind === 'carrier';
   const equipment = Array.isArray(data.equipment) ? data.equipment : (data.equipment ? [data.equipment] : []);
 
-  const tags = ['haulvera.com', isCarrier ? 'carrier' : 'lead'];
+  const tags = ['lp3-dispatching', isCarrier ? 'carrier' : 'lead'];
   equipment.forEach((e) => tags.push(String(e).toLowerCase().replace(/[^a-z0-9]+/g, '-')));
 
   // "ready-now" is the tag worth automating on — a carrier sitting empty today

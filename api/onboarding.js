@@ -45,7 +45,7 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const ref = /^(?:HV|PK)-\d{6}-[A-Z0-9]{5,6}$/.test(String(data.reference || ''))
+  const ref = /^(?:LP3|HV|PK)-\d{6}-[A-Z0-9]{5,6}$/.test(String(data.reference || ''))
     ? data.reference
     : reference();
 

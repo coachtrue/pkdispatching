@@ -1,4 +1,4 @@
-/** Shared helpers for the Haulvera serverless functions. */
+/** Shared helpers for the LP3 Dispatching serverless functions. */
 
 'use strict';
 
@@ -9,7 +9,7 @@ function reference() {
   const stamp = String(now.getFullYear()).slice(2) +
     String(now.getMonth() + 1).padStart(2, '0') +
     String(now.getDate()).padStart(2, '0');
-  return `HV-${stamp}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+  return `LP3-${stamp}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 }
 
 async function readJson(req) {

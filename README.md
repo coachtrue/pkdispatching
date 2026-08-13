@@ -1,9 +1,9 @@
-# Haulvera — Landing Page & Carrier Intake
+# LP3 Dispatching — Landing Page & Carrier Intake
 
-A complete marketing site and carrier onboarding system for **Haulvera** (formerly PK
-Dispatching) — carrier and logistics solutions for owner-operators and small fleets.
+A complete marketing site and carrier onboarding system for **LP3 Dispatching** (formerly PK
+Dispatching) — dispatch for owner-operators and small fleets.
 
-> **Move Smarter. Earn More.**
+> **Keep Moving. Keep Earning.**
 
 Plain HTML, CSS, and JavaScript — no build step, no framework, no bundler.
 Deploys to Vercel as a static site plus four small serverless functions.
@@ -44,8 +44,8 @@ packet documents, **GitHub** triggers the deploy.
 
 ## Brand
 
-Everything follows **Haulvera Brand Guidelines v1.0**, kept in
-`assets/Haulvera-Brand-Guidelines.docx`.
+Everything follows **LP3 Dispatching Brand Guidelines v1.0**, kept in
+`assets/LP3-Brand-Guidelines.docx`.
 
 | Token | Hex | Use |
 |---|---|---|
@@ -68,17 +68,20 @@ Three files ship:
 
 | File | Where it's used |
 |---|---|
-| `haulvera-lockup.png` | Light grounds — header in light theme, login card |
-| `haulvera-lockup-reversed.png` | Ink Navy grounds — footer, dark header, admin sidebar |
-| `haulvera-icon.png` | Favicon and touch icon |
+| `lp3-lockup.png` | Light grounds — header in light theme, login card |
+| `lp3-lockup-reversed.png` | Ink Navy grounds — footer, dark header, admin sidebar |
+| `lp3-icon.png` | Favicon and touch icon |
+
+The mark is three converging lines rising into one arrow — three people, one road. It reads
+as a road-merge sign to anyone who never hears the story, which is the point.
 
 Both lockups carry a **solid background** rather than transparency — white and `#0E1F33`
 respectively. That's why the dark header is opaque Ink Navy instead of translucent: any
 alpha there composites the hero through the header and reveals the logo as a lighter
 panel. If you ever swap in transparent artwork, that rule can relax.
 
-Carrier reference numbers are now `HV-YYMMDD-XXXXX`. The API still accepts the old `PK-`
-prefix, so anything issued before the rename continues to resolve.
+Carrier reference numbers are `LP3-YYMMDD-XXXXX`. The API still accepts the older `HV-` and `PK-`
+prefixes, so anything issued before either rename still resolves.
 
 ---
 
@@ -147,7 +150,7 @@ things GHL has no concept of: the freight fields and the carrier packet.
 
 ### Setup
 
-1. Create a sub-account for Haulvera. Copy its **Location ID** from
+1. Create a sub-account for LP3 Dispatching. Copy its **Location ID** from
    Settings → Business Profile.
 2. Create a **Private Integration** token in that sub-account with these scopes:
    `contacts.write`, `contacts.readonly`, `locations/customFields.write`,
@@ -180,7 +183,7 @@ GHL_API_TOKEN=pit-xxxx GHL_LOCATION_ID=xxxx node ghl-setup.js
 
 US carriers require **A2P 10DLC registration** before SMS delivers reliably, and that
 process asks for evidence of documented opt-in. The onboarding form already collects it —
-*"I authorize Haulvera to contact me by phone, SMS, and email… Reply STOP to opt
+*"I authorize LP3 Dispatching to contact me by phone, SMS, and email… Reply STOP to opt
 out."* Point at the form when you register the campaign.
 
 ---
@@ -262,10 +265,10 @@ data/
 
 | Placeholder | Where | Status |
 |---|---|---|
-| `(555) 555-0123` / `+15555550123` | `index.html`, `app.js` | **Still a placeholder** |
-| `dispatch@haulvera.com` | `index.html`, `app.js` | **Still a placeholder** |
-| `packets@haulvera.com` | `index.html`, `app.js`, `api/upload.js` | **Still a placeholder** |
-| `haulvera.com` (canonical + schema) | `index.html` | **Still a placeholder** |
+| `(888) 489-5187` / `+18884895187` | `index.html`, `app.js` | **Still a placeholder** |
+| `dispatch@pkdispatching.com` | `index.html`, `app.js` | **Still a placeholder** |
+| `packets@pkdispatching.com` | `index.html`, `app.js`, `api/upload.js` | **Still a placeholder** |
+| `pkdispatching.com` (canonical + schema) | `index.html` | **Still a placeholder** |
 | Dispatch fee — **10% of gross, single rate** | `index.html` → `#pricing` | ✅ Confirmed |
 | Terms of Service / Privacy Policy | `app.js` → `MODAL_CONTENT` | Draft — have counsel review |
 
@@ -291,7 +294,7 @@ Three capture points, in increasing depth:
 | 4. Review | Full read-back, notes, referral source, three consent checkboxes, typed e-signature |
 
 Each step validates before advancing, and every earlier step is re-validated on submit so
-nothing slips through. Carriers get a reference number (`HV-YYMMDD-XXXXX`) on success.
+nothing slips through. Carriers get a reference number (`LP3-YYMMDD-XXXXX`) on success.
 
 ### How uploads work, and why
 
@@ -332,9 +335,9 @@ var CONFIG = {
   leadEndpoint: '/api/leads',
   onboardEndpoint: '/api/onboarding',
   uploadEndpoint: '/api/upload',
-  fallbackEmail: 'dispatch@haulvera.com',
-  packetEmail: 'packets@haulvera.com',
-  phone: '(555) 555-0123',
+  fallbackEmail: 'dispatch@pkdispatching.com',
+  packetEmail: 'packets@pkdispatching.com',
+  phone: '(888) 489-5187',
   maxFileBytes: 4 * 1024 * 1024,
   allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'heic', 'doc', 'docx', 'webp']
 };

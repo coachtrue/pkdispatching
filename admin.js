@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Haulvera — Dispatch Desk
+   LP3 Dispatching — Dispatch Desk
 
    IMPORTANT: every value that originates from a carrier (company names,
    notes, emails) is written with textContent, never innerHTML. Carriers
@@ -299,7 +299,7 @@
     }
     if (r.email) {
       var mail = el('a', 'btn btn--sm btn--ghost', 'Email');
-      mail.href = 'mailto:' + r.email + '?subject=' + encodeURIComponent('Haulvera — ' + (r.company_name || r.name || ''));
+      mail.href = 'mailto:' + r.email + '?subject=' + encodeURIComponent('LP3 Dispatching — ' + (r.company_name || r.name || ''));
       row.appendChild(mail);
     }
     actions.appendChild(row);
@@ -592,7 +592,7 @@
   }
 
   /**
-   * /admin?ref=HV-… opens straight to that carrier. This is the link stored on
+   * /admin?ref=LP3-… opens straight to that carrier. This is the link stored on
    * the GoHighLevel contact, so "view their packet" is one click from the CRM.
    */
   function openDeepLink() {

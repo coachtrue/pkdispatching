@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Haulvera — landing page behavior
+   LP3 Dispatching — landing page behavior
    Handles: nav, multi-step express onboarding, carrier packet uploads,
             validation, form submission, modals, toasts.
    ========================================================================== */
@@ -21,9 +21,9 @@
     // at ~4.5 MB — a whole packet in one request would be rejected.
     uploadEndpoint: '/api/upload',
     // Used when an endpoint is unavailable or not configured.
-    fallbackEmail: 'dispatch@haulvera.com',
-    packetEmail: 'packets@haulvera.com',
-    phone: '(555) 555-0123',
+    fallbackEmail: 'dispatch@pkdispatching.com',
+    packetEmail: 'packets@pkdispatching.com',
+    phone: '(888) 489-5187',
     maxFileBytes: 4 * 1024 * 1024, // 4 MB per file — keeps each upload under the cap
     allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'heic', 'doc', 'docx', 'webp']
   };
@@ -77,7 +77,7 @@
       String(now.getMonth() + 1).padStart(2, '0') +
       String(now.getDate()).padStart(2, '0');
     var rand = Math.random().toString(36).slice(2, 7).toUpperCase();
-    return 'HV-' + stamp + '-' + rand;
+    return 'LP3-' + stamp + '-' + rand;
   }
 
   /* ==================================================================
@@ -788,9 +788,9 @@
     terms: {
       title: 'Terms of Service',
       html: [
-        '<p><strong>Last updated:</strong> ' + new Date().getFullYear() + '. This summary describes how Haulvera works with carriers. Your signed dispatch agreement is the controlling document.</p>',
+        '<p><strong>Last updated:</strong> ' + new Date().getFullYear() + '. This summary describes how LP3 Dispatching works with carriers. Your signed dispatch agreement is the controlling document.</p>',
         '<h3>1. What we are</h3>',
-        '<p>Haulvera is a dispatch service acting as an agent of the carrier under the carrier\'s own operating authority. We are not a motor carrier, freight broker, or freight forwarder, and we do not take possession of freight or assume carrier liability.</p>',
+        '<p>LP3 Dispatching is a dispatch service acting as an agent of the carrier under the carrier\'s own operating authority. We are not a motor carrier, freight broker, or freight forwarder, and we do not take possession of freight or assume carrier liability.</p>',
         '<h3>2. Carrier responsibilities</h3>',
         '<ul><li>Maintain active FMCSA operating authority and required insurance.</li><li>Provide accurate, current documents and notify us of any lapse or change.</li><li>Comply with all DOT, FMCSA, and state safety and hours-of-service regulations.</li><li>Communicate load status, delays, and delivery paperwork promptly.</li></ul>',
         '<h3>3. Our responsibilities</h3>',

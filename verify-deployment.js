@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Haulvera — post-deploy smoke test.
+ * LP3 Dispatching — post-deploy smoke test.
  *
  * Confirms a live deployment is wired to Supabase correctly, so you find out
  * now rather than when a real carrier submits.
@@ -40,7 +40,7 @@ const TEST_PDF = Buffer.from(
 );
 
 const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
-const testRef = `HV-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-TEST${(Math.random() * 10 | 0)}`;
+const testRef = `LP3-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-TEST${(Math.random() * 10 | 0)}`;
 
 async function main() {
   console.log(`\n  Verifying ${BASE}\n`);
@@ -50,10 +50,11 @@ async function main() {
   try {
     const res = await fetch(BASE, { redirect: 'follow' });
     html = await res.text();
-    record(res.ok && html.includes('Haulvera'),
+    record(res.ok && html.includes('LP3 Dispatching'),
       `Landing page loads (${res.status})`);
-    if (html.includes('(555) 555-0123')) {
-      console.log(`${WARN} Placeholder phone number is still live — run setup.js`);
+    // 555-01xx is the reserved fictional range — if one is live, it's a placeholder.
+    if (/\(555\)\s*555-01\d\d/.test(html)) {
+      console.log(`${WARN} A placeholder phone number is still live — run setup.js`);
     }
   } catch (err) {
     record(false, 'Landing page loads', err.message);

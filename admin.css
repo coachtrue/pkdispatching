@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Haulvera — Dispatch Desk (admin CRM)
+   LP3 Dispatching — Dispatch Desk (admin CRM)
 
    Shares the site's navy/amber identity, but this is a tool, not a page:
    quieter surfaces, denser type, and status carried by colour + shape so a
@@ -7,7 +7,7 @@
    ========================================================================== */
 
 :root {
-  /* Haulvera palette — Brand Guidelines v1.0 section 03 */
+  /* LP3 Dispatching palette — Brand Guidelines v1.0 section 03 */
   --navy-900: #060f1c;
   --navy-800: #0E1F33;   /* Ink Navy */
   --navy-700: #16304d;

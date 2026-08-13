@@ -74,7 +74,7 @@ async function select(table, query) {
   return text ? JSON.parse(text) : [];
 }
 
-/** Patch rows matching `filter` (a PostgREST filter, e.g. 'reference=eq.HV-1'). */
+/** Patch rows matching `filter` (a PostgREST filter, e.g. 'reference=eq.LP3-1'). */
 async function update(table, filter, patch) {
   const { url } = config();
   const res = await fetch(`${url}/rest/v1/${table}?${filter}`, {
