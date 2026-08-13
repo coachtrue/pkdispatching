@@ -1,28 +1,32 @@
 /* ==========================================================================
-   PK Dispatching — landing page styles
-   Palette: deep navy (authority/night driving) + amber (safety/hi-vis)
+   Haulvera brand palette — Brand Guidelines v1.0, section 03.
+   Ink Navy #0E1F33 · Steel #445468 · Signal Amber #F3A73A · Concrete #ECEAE3
+
+   Amber is an accent only: monogram, dividers, CTAs. Never a large background
+   field — at that scale it reads as a warning label, not a brand colour.
    ========================================================================== */
-
 :root {
-  --navy-900: #06101f;
-  --navy-800: #0b1b33;
-  --navy-700: #122744;
-  --navy-600: #1b3862;
-  --navy-500: #2a4f81;
+  --navy-900: #060f1c;   /* deepened Ink Navy, for gradients and footer */
+  --navy-800: #0E1F33;   /* Ink Navy — the brand primary */
+  --navy-700: #16304d;
+  --navy-600: #274866;
+  --navy-500: #445468;   /* Steel */
 
-  --amber-500: #ff9f1c;
-  --amber-400: #ffb547;
-  --amber-600: #e2860a;
+  --amber-500: #F3A73A;  /* Signal Amber */
+  --amber-400: #f7bd68;
+  --amber-600: #d18d22;
 
-  --ink: #14202e;
-  --ink-soft: #4a5a6e;
-  --ink-mute: #6b7b8f;
+  --concrete: #ECEAE3;   /* Concrete — section panels */
 
-  --line: #e2e8f0;
-  --line-soft: #eef2f7;
+  --ink: #0E1F33;        /* body copy sits on Ink Navy, per the palette */
+  --ink-soft: #445468;   /* Steel */
+  --ink-mute: #6b7b8a;
+
+  --line: #ddd9d0;
+  --line-soft: #eceae3;
   --surface: #ffffff;
-  --surface-alt: #f6f8fb;
-  --surface-tint: #eef3fa;
+  --surface-alt: #f5f4f0;
+  --surface-tint: #ECEAE3;
 
   --green: #12855a;
   --green-soft: #e6f4ee;
@@ -38,7 +42,14 @@
   --shadow-lg: 0 18px 50px rgba(6, 16, 31, .16);
 
   --wrap: 1180px;
-  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Typography — Brand Guidelines section 04. Three roles, and body copy is
+     never set in the display face. Arial is the approved fallback for each,
+     so the site needs no webfont; adding Archivo Black / Barlow / Inter later
+     upgrades it without touching any rule. */
+  --font-display: "Archivo Black", "Arial Black", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-head: Barlow, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -66,8 +77,17 @@ body {
 img { max-width: 100%; display: block; }
 a { color: var(--navy-600); }
 
-h1, h2, h3, h4 { line-height: 1.15; margin: 0 0 .5em; letter-spacing: -.02em; font-weight: 750; }
-h1 { font-size: clamp(2.15rem, 5.2vw, 3.85rem); }
+/* Display face is reserved for the h1 and major headlines. Everything else
+   uses the headline face; body copy never uses either. */
+h1, h2, h3, h4 {
+  line-height: 1.15; margin: 0 0 .5em; letter-spacing: -.02em;
+  font-family: var(--font-head); font-weight: 700;
+}
+h1 {
+  font-family: var(--font-display); font-weight: 400;
+  text-transform: uppercase; letter-spacing: -.015em;
+  font-size: clamp(1.8rem, 4.2vw, 3rem); line-height: 1.08;
+}
 h2 { font-size: clamp(1.7rem, 3.4vw, 2.6rem); }
 h3 { font-size: 1.12rem; }
 p  { margin: 0 0 1rem; }
@@ -155,18 +175,19 @@ p  { margin: 0 0 1rem; }
   transition: box-shadow .2s ease;
 }
 .site-header.is-stuck { box-shadow: var(--shadow-sm); }
-.header__inner { display: flex; align-items: center; gap: 1.5rem; min-height: 70px; }
+.header__inner { display: flex; align-items: center; gap: 1.5rem; min-height: 80px; }
 
-.brand { display: flex; align-items: center; gap: .65rem; text-decoration: none; color: inherit; flex: none; }
-.brand__mark {
-  width: 42px; height: 42px; flex: none;
-  display: grid; place-items: center;
-  background: var(--navy-800); color: var(--amber-500);
-  border-radius: 11px; font-weight: 800; letter-spacing: .01em; font-size: 1.05rem;
-}
-.brand__text { display: flex; flex-direction: column; line-height: 1.15; }
-.brand__text strong { font-size: 1.06rem; letter-spacing: -.02em; }
-.brand__text small { font-size: .7rem; color: var(--ink-mute); letter-spacing: .07em; text-transform: uppercase; }
+/* The lockup is always the supplied artwork — never re-set in type, and never
+   recoloured (Brand Guidelines, section 02: DON'TS). Two files ship: the
+   primary for light grounds and the reversed for navy, swapped by theme. */
+.brand { display: inline-flex; align-items: center; flex: none; text-decoration: none; }
+/* Minimum size for the full lockup is 1.25in wide (section 02). At 3.45:1 that
+   means ~55px tall before the tagline lines stop reading. */
+.brand__logo { display: block; height: 56px; width: auto; }
+.brand__logo--reversed { display: none; }
+
+/* Clear space equal to the badge height on all sides (section 02). */
+.brand { padding-block: .3rem; }
 
 .nav { display: flex; gap: 1.25rem; margin-left: auto; }
 .nav a {
@@ -669,20 +690,28 @@ input.is-invalid, select.is-invalid, textarea.is-invalid {
 }
 
 /* ---------- Final CTA ---------- */
-.finalcta { background: var(--amber-500); color: var(--navy-900); padding-block: clamp(2.8rem, 5vw, 4rem); }
+/* Concrete ground with a Signal Amber rule. The palette is explicit that amber
+   never becomes a large background field — at that scale it reads as a warning
+   label rather than a brand colour. It earns its place as the rule and the CTA. */
+.finalcta {
+  background: var(--concrete); color: var(--navy-800);
+  padding-block: clamp(2.8rem, 5vw, 4rem);
+  border-top: 3px solid var(--amber-500);
+}
 .finalcta__inner { text-align: center; }
-.finalcta h2 { margin-bottom: .4rem; }
-.finalcta p { font-size: 1.08rem; font-weight: 600; margin-bottom: 1.5rem; }
+.finalcta h2 { margin-bottom: .4rem; color: var(--navy-800); }
+.finalcta p { font-size: 1.08rem; font-weight: 600; margin-bottom: 1.5rem; color: var(--ink-soft); }
 .finalcta__actions { display: flex; gap: .9rem; justify-content: center; flex-wrap: wrap; }
-.finalcta .btn--accent { --btn-bg: var(--navy-800); --btn-fg: #fff; }
-.finalcta .btn--ghost { color: var(--navy-900); }
+.finalcta .btn--accent { --btn-bg: var(--amber-500); --btn-fg: var(--navy-900); }
+.finalcta .btn--ghost { color: var(--navy-800); border-color: var(--navy-500); }
 
 /* ---------- Footer ---------- */
 .site-footer { background: var(--navy-900); color: #9db1cb; padding-top: 3rem; font-size: .91rem; }
 .footer__grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1.2fr; gap: 2rem; padding-bottom: 2.2rem; }
 .brand--footer { margin-bottom: .9rem; }
-.brand--footer .brand__text strong { color: #fff; }
-.brand--footer .brand__mark { background: var(--navy-700); }
+/* Footer sits on Ink Navy, so it always takes the reversed lockup. */
+.brand--footer .brand__logo { display: none; }
+.brand--footer .brand__logo--reversed { display: block; height: 58px; }
 .footer__brand p { max-width: 36ch; font-size: .89rem; }
 .footer__col h3 { color: #fff; font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; margin-bottom: .9rem; }
 .footer__col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
@@ -804,11 +833,13 @@ input.is-invalid, select.is-invalid, textarea.is-invalid {
     --ink: #e6edf6;
     --ink-soft: #a9bacf;
     --ink-mute: #8296ae;
-    --line: #23324a;
-    --line-soft: #1a273b;
-    --surface: #0e1928;
-    --surface-alt: #0a1320;
-    --surface-tint: #16243a;
+    --line: #23364f;
+    --line-soft: #17293f;
+    /* Ink Navy exactly, so the reversed lockup's own ground disappears into
+       the header instead of showing as a lighter panel behind the logo. */
+    --surface: #0E1F33;
+    --surface-alt: #0a1728;
+    --surface-tint: #16304d;
     --green-soft: #0f2a20;
     --red-soft: #2c1512;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
@@ -816,10 +847,15 @@ input.is-invalid, select.is-invalid, textarea.is-invalid {
     --shadow-lg: 0 20px 50px rgba(0, 0, 0, .55);
   }
   body { background: var(--surface); }
-  .site-header { background: rgba(14, 25, 40, .92); }
+  /* Opaque, not translucent: the reversed lockup carries a solid #0E1F33
+     ground, and any alpha here composites the hero through it and reveals
+     the logo as a lighter panel. */
+  .site-header { background: #0E1F33; backdrop-filter: none; }
   .nav a:hover, .nav a.is-current { color: var(--amber-400); }
   .phone-link { color: var(--amber-400); }
-  .brand__mark { background: var(--navy-700); }
+  /* Dark theme: the header ground goes navy, so swap in the reversed lockup. */
+  .brand__logo { display: none; }
+  .brand__logo--reversed { display: block; }
   .btn--outline { --btn-fg: var(--ink); }
   .plan__num { color: var(--amber-400); }
   .plan__eyebrow { color: var(--amber-400); }
@@ -830,7 +866,7 @@ input.is-invalid, select.is-invalid, textarea.is-invalid {
   .compare__col--good { background: #0f2a20; border-color: #1d4a37; }
   .notice p { color: #b9e6d0; }
   .doc__tag--req { background: #3a2a10; color: var(--amber-400); }
-  .mobile-bar { background: rgba(14, 25, 40, .97); }
+  .mobile-bar { background: rgba(14, 31, 51, .97); }
   .dropzone.is-dragover { background: #2a2010; }
   .finalcta { color: var(--navy-900); }
   select {

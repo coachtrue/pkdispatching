@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PK Dispatching — Dispatch Desk
+   Haulvera — Dispatch Desk
 
    IMPORTANT: every value that originates from a carrier (company names,
    notes, emails) is written with textContent, never innerHTML. Carriers
@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  var API = '/api/admin';
+  var API = '/api/crm';
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var state = { view: 'all', search: '', status: '', contacts: [], current: null, kind: 'note' };
@@ -130,7 +130,9 @@
         .then(function () {
           $('#password').value = '';
           showApp();
-          return refreshAll();
+          // Honour ?ref= here too — arriving from a GoHighLevel link usually
+          // means signing in first, and the deep link must survive that.
+          return refreshAll().then(openDeepLink);
         })
         .catch(function (e2) { err.textContent = e2.message; })
         .finally(function () { label.textContent = 'Sign in'; });
@@ -297,7 +299,7 @@
     }
     if (r.email) {
       var mail = el('a', 'btn btn--sm btn--ghost', 'Email');
-      mail.href = 'mailto:' + r.email + '?subject=' + encodeURIComponent('PK Dispatching — ' + (r.company_name || r.name || ''));
+      mail.href = 'mailto:' + r.email + '?subject=' + encodeURIComponent('Haulvera — ' + (r.company_name || r.name || ''));
       row.appendChild(mail);
     }
     actions.appendChild(row);
@@ -583,10 +585,30 @@
           $('#loginError').textContent = 'ADMIN_PASSWORD is not set on the server yet.';
           return;
         }
-        if (s.signedIn) { showApp(); return refreshAll(); }
+        if (s.signedIn) { showApp(); return refreshAll().then(openDeepLink); }
         showGate();
       })
       .catch(function () { showGate(); });
+  }
+
+  /**
+   * /admin?ref=HV-… opens straight to that carrier. This is the link stored on
+   * the GoHighLevel contact, so "view their packet" is one click from the CRM.
+   */
+  function openDeepLink() {
+    var match = /[?&]ref=([^&]+)/.exec(window.location.search);
+    if (!match) return;
+    var reference = decodeURIComponent(match[1]);
+    var found = state.contacts.filter(function (c) { return c.reference === reference; })[0];
+    if (found) { openContact(found); return; }
+    // Not in the current view — fetch it directly rather than give up.
+    api('contacts', { query: '&q=' + encodeURIComponent(reference) })
+      .then(function (data) {
+        var hit = (data.contacts || []).filter(function (c) { return c.reference === reference; })[0];
+        if (hit) openContact(hit);
+        else toast('Could not find ' + reference + '.', true);
+      })
+      .catch(function (e) { toast(e.message, true); });
   }
 
   if (document.readyState === 'loading') {

@@ -65,24 +65,31 @@ module.exports = async function handler(req, res) {
     console.warn('[lead] Supabase is not configured — relying on the webhook only.');
   }
 
-  // Never let a GHL hiccup cost the lead — this only ever logs on failure.
-  try {
-    await ghl.push('lead', {
-      reference: ref,
-      contactName: row.name,
-      email: row.email,
-      phone: row.phone,
-      companyName: row.company_name,
-      mcNumber: row.mc_number,
-      equipment: row.equipment,
-      notes: row.message
-    }, []);
-  } catch (err) {
-    console.error('[lead] GHL push failed:', err.message);
+  // GHL is the CRM — the contact and every follow-up lives there. A failure
+  // here must never cost the lead, so it degrades to the webhook and logs.
+  let crm = { pushed: false };
+  if (ghl.isConfigured()) {
+    try {
+      crm = await ghl.push('lead', {
+        reference: ref,
+        name: row.name,
+        contactName: row.name,
+        companyName: row.company_name,
+        email: row.email,
+        phone: row.phone,
+        mcNumber: row.mc_number,
+        equipment: row.equipment,
+        message: row.message
+      });
+    } catch (err) {
+      console.error('[lead] GHL push failed:', err.message);
+      crm = { pushed: false, error: err.message };
+    }
   }
 
   await notify({
     type: row.form_type === 'contact' ? 'Contact form' : 'Call-back request',
+    inGoHighLevel: crm.pushed,
     reference: ref,
     receivedAt: new Date().toISOString(),
     savedToDatabase: persisted,

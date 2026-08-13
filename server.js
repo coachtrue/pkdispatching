@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * PK Dispatching — static host + carrier intake API.
+ * Haulvera — static host + carrier intake API.
  *
  * Zero dependencies: run it with `node server.js` on any Node 18+ install.
  *
@@ -22,7 +22,6 @@ const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
-const ghl = require('./api/_ghl');
 
 const PORT = Number(process.env.PORT) || 3000;
 const ROOT = __dirname;
@@ -69,7 +68,7 @@ function reference() {
   const stamp = String(now.getFullYear()).slice(2) +
     String(now.getMonth() + 1).padStart(2, '0') +
     String(now.getDate()).padStart(2, '0');
-  return `PK-${stamp}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+  return `HV-${stamp}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 }
 
 /** Strip directories and anything that isn't a safe filename character. */
@@ -154,22 +153,6 @@ async function handleLead(req, res) {
   delete record.website;
 
   await appendRecord('leads.ndjson', record);
-
-  try {
-    await ghl.push('lead', {
-      reference: record.reference,
-      contactName: record.name,
-      email: record.email,
-      phone: record.phone,
-      companyName: record.companyName,
-      mcNumber: record.mcNumber,
-      equipment: record.equipment,
-      notes: record.message
-    }, []);
-  } catch (err) {
-    console.error('[lead] GHL push failed:', err.message);
-  }
-
   await notify({
     type: 'lead',
     reference: record.reference,
@@ -210,7 +193,7 @@ async function handleUpload(req, res, url) {
   const data = await readBody(req, MAX_FILE_BYTES);
   if (!data.length) return sendJson(res, 400, { error: 'Empty file.' });
 
-  const ref = /^PK-\d{6}-[A-Z0-9]{5,6}$/.test(url.searchParams.get('reference') || '')
+  const ref = /^(?:HV|PK)-\d{6}-[A-Z0-9]{5,6}$/.test(url.searchParams.get('reference') || '')
     ? url.searchParams.get('reference')
     : 'unfiled';
 
@@ -254,7 +237,7 @@ async function handleOnboarding(req, res) {
     return sendJson(res, 400, { error: `Missing required field(s): ${missing.join(', ')}` });
   }
 
-  const ref = String(fields.reference || '').match(/^PK-\d{6}-[A-Z0-9]{5,6}$/)
+  const ref = String(fields.reference || '').match(/^(?:HV|PK)-\d{6}-[A-Z0-9]{5,6}$/)
     ? fields.reference
     : reference();
 
@@ -274,33 +257,6 @@ async function handleOnboarding(req, res) {
   const targetDir = path.join(UPLOAD_DIR, ref);
   await fsp.mkdir(targetDir, { recursive: true });
   await fsp.writeFile(path.join(targetDir, 'submission.json'), JSON.stringify(record, null, 2), 'utf8');
-
-  try {
-    await ghl.push('carrier', {
-      reference: ref,
-      contactName: fields.contactName,
-      email: fields.email,
-      phone: fields.phone,
-      companyName: fields.companyName,
-      homeCity: fields.homeCity,
-      homeState: fields.homeState,
-      mcNumber: fields.mcNumber,
-      dotNumber: fields.dotNumber,
-      authorityAge: fields.authorityAge,
-      equipment: fields.equipment,
-      endorsements: fields.endorsements,
-      truckCount: fields.truckCount,
-      radius: fields.radius,
-      minRpm: fields.minRpm,
-      preferredLanes: fields.preferredLanes,
-      avoidAreas: fields.avoidAreas,
-      factoringCompany: fields.factoringCompany,
-      startDate: fields.startDate,
-      notes: fields.notes
-    }, documents.map((doc) => ({ category: doc.category, link: `local file: ${doc.name || 'document'} (not a real URL — no Supabase locally)` })));
-  } catch (err) {
-    console.error('[onboarding] GHL push failed:', err.message);
-  }
 
   await notify({
     type: 'onboarding',
@@ -361,7 +317,7 @@ async function serveStatic(req, res, pathname) {
   }
 
   res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
-  res.end('<h1>404 — Not found</h1><p><a href="/">Back to PK Dispatching</a></p>');
+  res.end('<h1>404 — Not found</h1><p><a href="/">Back to Haulvera</a></p>');
 }
 
 /* ------------------------------------------------------------------ *
@@ -383,7 +339,7 @@ const server = http.createServer(async (req, res) => {
     }
     // The admin CRM runs the very same handler Vercel will execute, wrapped
     // in a minimal res shim, so local behaviour matches production exactly.
-    if (url.pathname === '/api/admin') {
+    if (url.pathname === '/api/crm') {
       const shim = Object.assign(res, {
         status(code) { res.statusCode = code; return res; },
         json(payload) {
@@ -393,7 +349,7 @@ const server = http.createServer(async (req, res) => {
           return res;
         }
       });
-      return await require('./api/admin.js')(req, shim);
+      return await require('./api/crm.js')(req, shim);
     }
     if (req.method === 'GET' && url.pathname === '/api/health') {
       return sendJson(res, 200, { ok: true, uptime: process.uptime() });
@@ -407,7 +363,7 @@ const server = http.createServer(async (req, res) => {
     if (!res.headersSent) {
       sendJson(res, err.statusCode || 500, {
         error: err.statusCode === 413
-          ? 'File is larger than 4 MB. Email it to packets@pkdispatching.com instead.'
+          ? 'File is larger than 4 MB. Email it to packets@haulvera.com instead.'
           : 'Server error.'
       });
     }
@@ -418,7 +374,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`PK Dispatching running at http://localhost:${PORT}`);
+  console.log(`Haulvera running at http://localhost:${PORT}`);
   console.log(`Submissions -> ${DATA_DIR}`);
   if (!NOTIFY_WEBHOOK) console.log('Set NOTIFY_WEBHOOK to forward submissions to Slack/Zapier/your CRM.');
 });

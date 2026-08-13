@@ -45,7 +45,7 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const ref = /^PK-\d{6}-[A-Z0-9]{5,6}$/.test(String(data.reference || ''))
+  const ref = /^(?:HV|PK)-\d{6}-[A-Z0-9]{5,6}$/.test(String(data.reference || ''))
     ? data.reference
     : reference();
 
@@ -129,32 +129,41 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // Never let a GHL hiccup cost the carrier — this only ever logs on failure.
-  try {
-    await ghl.push('carrier', {
-      reference: ref,
-      contactName: carrierRow.contact_name,
-      email: carrierRow.email,
-      phone: carrierRow.phone,
-      companyName: carrierRow.company_name,
-      homeCity: carrierRow.home_city,
-      homeState: carrierRow.home_state,
-      mcNumber: carrierRow.mc_number,
-      dotNumber: carrierRow.dot_number,
-      authorityAge: carrierRow.authority_age,
-      equipment: carrierRow.equipment,
-      endorsements: carrierRow.endorsements,
-      truckCount: carrierRow.truck_count,
-      radius: carrierRow.operating_radius,
-      minRpm: carrierRow.min_rate_per_mile,
-      preferredLanes: carrierRow.preferred_lanes,
-      avoidAreas: carrierRow.avoid_areas,
-      factoringCompany: carrierRow.factoring_company,
-      startDate: carrierRow.availability,
-      notes: carrierRow.notes
-    }, documentLinks);
-  } catch (err) {
-    console.error('[onboarding] GHL push failed:', err.message);
+  // Push into GoHighLevel, which is where the relationship is worked. The
+  // packet URL points back here, because signed document links expire.
+  const origin = req.headers['x-forwarded-host'] || req.headers.host;
+  const packetUrl = origin ? `https://${origin}/admin?ref=${encodeURIComponent(ref)}` : '';
+
+  let crm = { pushed: false };
+  if (ghl.isConfigured()) {
+    try {
+      crm = await ghl.push('carrier', {
+        reference: ref,
+        contactName: carrierRow.contact_name,
+        companyName: carrierRow.company_name,
+        email: carrierRow.email,
+        phone: carrierRow.phone,
+        mcNumber: carrierRow.mc_number,
+        dotNumber: carrierRow.dot_number,
+        authorityAge: carrierRow.authority_age,
+        equipment: carrierRow.equipment,
+        endorsements: carrierRow.endorsements,
+        truckCount: carrierRow.truck_count,
+        homeCity: carrierRow.home_city,
+        homeState: carrierRow.home_state,
+        radius: carrierRow.operating_radius,
+        minRpm: carrierRow.min_rate_per_mile,
+        preferredLanes: carrierRow.preferred_lanes,
+        avoidAreas: carrierRow.avoid_areas,
+        factoringCompany: carrierRow.factoring_company,
+        startDate: carrierRow.availability,
+        notes: carrierRow.notes,
+        packetUrl
+      }, documentLinks);
+    } catch (err) {
+      console.error('[onboarding] GHL push failed:', err.message);
+      crm = { pushed: false, error: err.message };
+    }
   }
 
   await notify({
@@ -162,6 +171,8 @@ module.exports = async function handler(req, res) {
     reference: ref,
     receivedAt: new Date().toISOString(),
     savedToDatabase: persisted,
+    inGoHighLevel: crm.pushed,
+    packetUrl,
     company: carrierRow.company_name,
     dba: carrierRow.dba,
     contact: carrierRow.contact_name,

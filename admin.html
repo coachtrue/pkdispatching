@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Dispatch Desk — PK Dispatching</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230b1b33'/><text y='70' x='50' text-anchor='middle' font-size='54' font-family='system-ui' font-weight='700' fill='%23ffa726'>PK</text></svg>">
+<title>Dispatch Desk — Haulvera</title>
+<link rel="icon" type="image/png" href="assets/haulvera-icon.png">
+<link rel="apple-touch-icon" href="assets/haulvera-icon.png">
 <link rel="stylesheet" href="admin.css">
 </head>
 <body>
@@ -13,7 +14,8 @@
 <!-- ================= LOGIN ================= -->
 <div class="gate" id="gate" hidden>
   <form class="gate__card" id="loginForm">
-    <div class="gate__brand"><span class="gate__mark">PK</span> Dispatch Desk</div>
+    <img class="gate__logo" src="assets/haulvera-lockup.png" alt="Haulvera" width="901" height="261">
+    <div class="gate__brand">Dispatch Desk</div>
     <p class="gate__sub">Carrier records and communications.</p>
     <label for="password">Password</label>
     <input id="password" type="password" autocomplete="current-password" required autofocus>
@@ -25,7 +27,10 @@
 <!-- ================= APP ================= -->
 <div class="app" id="app" hidden>
   <aside class="side">
-    <div class="side__brand"><span class="side__mark">PK</span><span>Dispatch Desk</span></div>
+    <div class="side__brand">
+      <img class="side__logo" src="assets/haulvera-lockup-reversed.png" alt="Haulvera" width="901" height="261">
+      <span class="side__sub">Dispatch Desk</span>
+    </div>
 
     <nav class="side__nav" id="viewNav" aria-label="Views">
       <button class="side__link is-active" data-view="all">All contacts</button>

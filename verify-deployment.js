@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * PK Dispatching — post-deploy smoke test.
+ * Haulvera — post-deploy smoke test.
  *
  * Confirms a live deployment is wired to Supabase correctly, so you find out
  * now rather than when a real carrier submits.
@@ -40,7 +40,7 @@ const TEST_PDF = Buffer.from(
 );
 
 const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
-const testRef = `PK-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-TEST${(Math.random() * 10 | 0)}`;
+const testRef = `HV-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-TEST${(Math.random() * 10 | 0)}`;
 
 async function main() {
   console.log(`\n  Verifying ${BASE}\n`);
@@ -50,7 +50,7 @@ async function main() {
   try {
     const res = await fetch(BASE, { redirect: 'follow' });
     html = await res.text();
-    record(res.ok && html.includes('PK Dispatching'),
+    record(res.ok && html.includes('Haulvera'),
       `Landing page loads (${res.status})`);
     if (html.includes('(555) 555-0123')) {
       console.log(`${WARN} Placeholder phone number is still live — run setup.js`);

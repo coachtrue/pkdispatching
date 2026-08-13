@@ -1,12 +1,15 @@
-# PK Dispatching — Landing Page & Carrier Intake
+# Haulvera — Landing Page & Carrier Intake
 
-A complete marketing site and carrier onboarding system for PK Dispatching, a freight
-dispatch service for owner-operators and small fleets.
+A complete marketing site and carrier onboarding system for **Haulvera** (formerly PK
+Dispatching) — carrier and logistics solutions for owner-operators and small fleets.
+
+> **Move Smarter. Earn More.**
 
 Plain HTML, CSS, and JavaScript — no build step, no framework, no bundler.
 Deploys to Vercel as a static site plus four small serverless functions.
 
 ```
+assets/            brand artwork + the guidelines document
 index.html         the landing page
 styles.css         all styling (responsive, dark-mode aware, print styles)
 app.js             forms, validation, multi-step onboarding, file uploads
@@ -20,17 +23,62 @@ api/
   leads.js         quick call-back + contact form    -> leads table
   upload.js        one document per request          -> private Supabase bucket
   onboarding.js    express onboarding submission     -> carriers + carrier_documents
-  admin.js         the CRM back end (auth + all admin actions)
+  crm.js           the CRM back end (auth + all admin actions)
   _auth.js         admin session signing and verification
+  _ghl.js          GoHighLevel push (contacts, custom fields, pipeline)
   _supabase.js     tiny REST client (no dependencies)
-  _ghl.js          GoHighLevel push — optional, see below
   _lib.js          shared helpers
 server.js          local dev server (same endpoints, saves to ./data)
-ghl-setup.js       one-time GHL custom-field + pipeline setup — see below
 ```
 
 Stack: **Vercel** hosts the site and functions, **Supabase** stores carrier records and
 packet documents, **GitHub** triggers the deploy.
+
+> **The `api/` and `supabase/` folders are not optional.** Vercel only turns a file into an
+> API endpoint if it sits in a top-level `api/` directory. GitHub's drag-and-drop uploader
+> flattens folders unless you drag the *directory* rather than the files inside it — if
+> `api/leads.js` lands at the repo root, every form on the site returns 404 while the
+> landing page still looks perfect. Push with git, or drag whole folders.
+
+---
+
+## Brand
+
+Everything follows **Haulvera Brand Guidelines v1.0**, kept in
+`assets/Haulvera-Brand-Guidelines.docx`.
+
+| Token | Hex | Use |
+|---|---|---|
+| Ink Navy | `#0E1F33` | Primary — wordmark, badge fill, headers |
+| Steel | `#445468` | Secondary text, tagline |
+| Signal Amber | `#F3A73A` | **Accent only** — dividers, CTAs |
+| Concrete | `#ECEAE3` | Backgrounds, section panels |
+
+**Amber is never a large background field.** At that scale it reads as a warning label
+rather than a brand colour, so it appears only as rules, small badges, and buttons — the
+closing CTA band uses Concrete with an amber rule above it.
+
+**Type** has three roles and body copy never uses the display face: Archivo Black / Arial
+Black for the h1 and wordmark, Barlow / Arial Bold for headings, Inter / Arial for body.
+Arial is the approved fallback for each, so the site loads **no webfonts**; adding the
+Google Fonts later upgrades it without touching a single rule.
+
+**The lockup is always the supplied artwork** — never re-set in type, never recoloured.
+Three files ship:
+
+| File | Where it's used |
+|---|---|
+| `haulvera-lockup.png` | Light grounds — header in light theme, login card |
+| `haulvera-lockup-reversed.png` | Ink Navy grounds — footer, dark header, admin sidebar |
+| `haulvera-icon.png` | Favicon and touch icon |
+
+Both lockups carry a **solid background** rather than transparency — white and `#0E1F33`
+respectively. That's why the dark header is opaque Ink Navy instead of translucent: any
+alpha there composites the hero through the header and reveals the logo as a lighter
+panel. If you ever swap in transparent artwork, that rule can relax.
+
+Carrier reference numbers are now `HV-YYMMDD-XXXXX`. The API still accepts the old `PK-`
+prefix, so anything issued before the rename continues to resolve.
 
 ---
 
@@ -45,7 +93,7 @@ That creates the `leads`, `carriers`, `carrier_documents`, and `activities` tabl
 `carrier-packets` storage bucket. It's idempotent, so re-running it is safe — including
 on an existing database, where it only adds what's missing.
 
-### 2. Vercel — set three environment variables
+### 2. Vercel — set the environment variables
 
 Settings → Environment Variables:
 
@@ -78,9 +126,72 @@ success page and the webhook still fires, flagged `savedToDatabase: false`.
 
 ---
 
+## GoHighLevel
+
+GHL is the CRM. Every carrier and lead is pushed there on submission, and that is where
+contact, follow-up, and automation happen. The site stays the system of record for the
+things GHL has no concept of: the freight fields and the carrier packet.
+
+**What gets pushed**
+
+- The contact, upserted — GHL matches on email/phone, so a lead who later completes
+  onboarding enriches the same record instead of creating a duplicate.
+- Freight data mapped to custom fields: MC, USDOT, authority age, equipment, endorsements,
+  truck count, home base, radius, rate floor, lanes, factoring, availability.
+- Tags: `carrier` / `lead`, one per equipment type, and **`ready-now`** when a carrier says
+  they're empty today — that's the one worth building an automation on.
+- A note carrying the carrier's own words and 7-day signed links to their documents.
+- An opportunity in your pipeline (optional — set `GHL_PIPELINE_ID`).
+- A **Carrier Packet** field linking to `/admin?ref=…`, which opens straight to that
+  carrier's documents with freshly minted links. Signed links expire; this one never does.
+
+### Setup
+
+1. Create a sub-account for Haulvera. Copy its **Location ID** from
+   Settings → Business Profile.
+2. Create a **Private Integration** token in that sub-account with these scopes:
+   `contacts.write`, `contacts.readonly`, `locations/customFields.write`,
+   `locations/customFields.readonly`, `locations.readonly`, `opportunities.write`.
+3. Run the setup script — it creates all 16 custom fields for you and prints the
+   environment variables:
+
+```bash
+GHL_API_TOKEN=pit-xxxx GHL_LOCATION_ID=xxxx node ghl-setup.js
+```
+
+   Add `--dry` to see what it would do first. Re-running is safe: existing fields are
+   reused, never duplicated.
+
+4. Paste the printed variables into Vercel and **redeploy**.
+
+| Variable | Purpose |
+|---|---|
+| `GHL_API_TOKEN` | Private Integration token — server only, never sent to the browser |
+| `GHL_LOCATION_ID` | The sub-account this site feeds |
+| `GHL_FIELD_MAP` | `{fieldKey: customFieldId}` — printed by `ghl-setup.js` |
+| `GHL_PIPELINE_ID` | Optional — opens an opportunity per carrier |
+| `GHL_STAGE_ID` | Optional — which stage they land in |
+
+> A GoHighLevel outage can never cost you a carrier. The push is wrapped: the carrier still
+> gets their success page, the record still lands in Supabase, and the webhook still fires
+> flagged `inGoHighLevel: false` so you know to add them by hand.
+
+### Before you text carriers from GHL
+
+US carriers require **A2P 10DLC registration** before SMS delivers reliably, and that
+process asks for evidence of documented opt-in. The onboarding form already collects it —
+*"I authorize Haulvera to contact me by phone, SMS, and email… Reply STOP to opt
+out."* Point at the form when you register the campaign.
+
+---
+
 ## Dispatch Desk — the admin CRM
 
 Live at **`/admin`** on your deployment. Sign in with `ADMIN_PASSWORD`.
+
+With GoHighLevel connected, this becomes the **packet viewer** rather than your daily
+workspace — GHL is where you work the contacts. Its job is the carrier documents, which
+GHL cannot hold safely, and `/admin?ref=HV-…` opens straight to one carrier from a GHL link.
 
 **What it does**
 
@@ -124,45 +235,6 @@ them, so treat the webhook channel as sensitive.
 
 ---
 
-## GoHighLevel (optional)
-
-Every lead and carrier submission can also push into a GHL sub-account as an
-upserted contact, tagged and with the freight-specific fields filled in — MC/DOT
-number, equipment, lanes, factoring company, and so on. Supabase stays the durable
-record either way; GHL is where you'd actually work the relationship (calls, texts,
-pipeline). Skip this section entirely if you don't use GHL — every call site checks
-`isConfigured()` first and silently no-ops without it.
-
-**One-time setup**, from your own terminal, with a GHL **Private Integration token**
-for the target sub-account:
-
-```bash
-GHL_API_TOKEN=pit-… GHL_LOCATION_ID=… node ghl-setup.js --dry   # preview, no writes
-GHL_API_TOKEN=pit-… GHL_LOCATION_ID=… node ghl-setup.js         # creates the fields
-```
-
-It creates the sixteen freight custom fields it doesn't find already on the
-sub-account (matched by name, so it's safe to re-run), reads your pipelines, and
-prints the environment variables to paste into Vercel:
-
-```
-GHL_LOCATION_ID=…
-GHL_API_TOKEN=…          (the token you just used)
-GHL_FIELD_MAP={"mc_number":"...", ...}
-GHL_PIPELINE_ID=…        (optional — opens an opportunity per carrier)
-GHL_STAGE_ID=…           (optional — the stage new carriers land in)
-```
-
-Required token scopes: `locations.readonly`, `locations/customFields.write`,
-`contacts.write`, `contacts.readonly`, `opportunities.write`. The token is only
-ever read from the environment — never a file, an argument, or the repo — so it
-never lands in shell history or gets sent anywhere but GHL.
-
-Redeploy after setting the Vercel env vars; they only apply to builds created
-after they're set.
-
----
-
 ## Run it locally
 
 ```bash
@@ -176,7 +248,7 @@ submissions to `./data` instead of Blob storage:
 data/
 ├─ leads.ndjson
 ├─ onboarding.ndjson
-└─ uploads/PK-260808-A1B2C3/
+└─ uploads/HV-260812-A1B2C3/
    ├─ submission.json
    ├─ authority-mc-letter.pdf
    └─ w9-w9.pdf
@@ -191,9 +263,9 @@ data/
 | Placeholder | Where | Status |
 |---|---|---|
 | `(555) 555-0123` / `+15555550123` | `index.html`, `app.js` | **Still a placeholder** |
-| `dispatch@pkdispatching.com` | `index.html`, `app.js` | **Still a placeholder** |
-| `packets@pkdispatching.com` | `index.html`, `app.js`, `api/upload.js` | **Still a placeholder** |
-| `pkdispatching.com` (canonical + schema) | `index.html` | **Still a placeholder** |
+| `dispatch@haulvera.com` | `index.html`, `app.js` | **Still a placeholder** |
+| `packets@haulvera.com` | `index.html`, `app.js`, `api/upload.js` | **Still a placeholder** |
+| `haulvera.com` (canonical + schema) | `index.html` | **Still a placeholder** |
 | Dispatch fee — **10% of gross, single rate** | `index.html` → `#pricing` | ✅ Confirmed |
 | Terms of Service / Privacy Policy | `app.js` → `MODAL_CONTENT` | Draft — have counsel review |
 
@@ -219,7 +291,7 @@ Three capture points, in increasing depth:
 | 4. Review | Full read-back, notes, referral source, three consent checkboxes, typed e-signature |
 
 Each step validates before advancing, and every earlier step is re-validated on submit so
-nothing slips through. Carriers get a reference number (`PK-YYMMDD-XXXXX`) on success.
+nothing slips through. Carriers get a reference number (`HV-YYMMDD-XXXXX`) on success.
 
 ### How uploads work, and why
 
@@ -227,7 +299,7 @@ nothing slips through. Carriers get a reference number (`PK-YYMMDD-XXXXX`) on su
 packet as one multipart request would fail, so documents go up **one per request**:
 
 ```
-POST /api/upload?name=coi.pdf&category=insurance&reference=PK-260808-A1B2C3
+POST /api/upload?name=coi.pdf&category=insurance&reference=HV-260812-A1B2C3
      body: the raw file bytes  ->  { path, bytes, contentType }
 
 POST /api/onboarding
@@ -260,8 +332,8 @@ var CONFIG = {
   leadEndpoint: '/api/leads',
   onboardEndpoint: '/api/onboarding',
   uploadEndpoint: '/api/upload',
-  fallbackEmail: 'dispatch@pkdispatching.com',
-  packetEmail: 'packets@pkdispatching.com',
+  fallbackEmail: 'dispatch@haulvera.com',
+  packetEmail: 'packets@haulvera.com',
   phone: '(555) 555-0123',
   maxFileBytes: 4 * 1024 * 1024,
   allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'heic', 'doc', 'docx', 'webp']
@@ -276,8 +348,6 @@ Server/function environment variables:
 | `SUPABASE_SERVICE_ROLE_KEY` | `api/*` | Server-only key; bypasses RLS |
 | `SUPABASE_BUCKET` | `api/upload.js` | Defaults to `carrier-packets` |
 | `NOTIFY_WEBHOOK` | `api/*` | Real-time submission alerts |
-| `GHL_API_TOKEN`, `GHL_LOCATION_ID` | `api/_ghl.js` | Optional — see [GoHighLevel](#gohighlevel-optional) |
-| `GHL_FIELD_MAP`, `GHL_PIPELINE_ID`, `GHL_STAGE_ID` | `api/_ghl.js` | Optional — printed by `ghl-setup.js` |
 | `PORT`, `DATA_DIR` | `server.js` | Local dev only |
 
 ---

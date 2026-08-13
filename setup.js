@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * PK Dispatching — one-shot placeholder replacement.
+ * Haulvera — one-shot placeholder replacement.
  *
  * Swaps every placeholder phone number, email address, and domain across the
  * whole project in one pass, so you don't have to hunt through six files.
  *
  *   node setup.js --phone "(214) 555-8890" \
- *                 --email dispatch@pkdispatching.com \
- *                 --packets packets@pkdispatching.com \
- *                 --domain pkdispatching.com
+ *                 --email dispatch@haulvera.com \
+ *                 --packets packets@haulvera.com \
+ *                 --domain haulvera.com
  *
  * Only --phone is required; anything you leave out keeps its current value.
  * Run with --check to see what would change without writing anything.
@@ -41,9 +41,9 @@ const CURRENT = {
   phoneDisplay: '(555) 555-0123',
   phoneE164: '+15555550123',
   phoneDashed: '+1-555-555-0123',
-  email: 'dispatch@pkdispatching.com',
-  packets: 'packets@pkdispatching.com',
-  domain: 'pkdispatching.com'
+  email: 'dispatch@haulvera.com',
+  packets: 'packets@haulvera.com',
+  domain: 'haulvera.com'
 };
 
 /* ------------------------------------------------------------------ *
@@ -73,7 +73,7 @@ function fail(message) {
 
 function usage() {
   console.log(`
-  PK Dispatching setup — replace the placeholder contact details.
+  Haulvera setup — replace the placeholder contact details.
 
     node setup.js --phone "(214) 555-8890" [options]
 
@@ -134,7 +134,7 @@ const phone = args.phone ? normalizePhone(args.phone) : null;
 if (args.email && !validEmail(args.email)) fail(`"${args.email}" isn't a valid email address.`);
 if (args.packets && !validEmail(args.packets)) fail(`"${args.packets}" isn't a valid email address.`);
 if (args.domain && !validDomain(args.domain)) {
-  fail(`"${args.domain}" should be a bare domain like pkdispatching.com — no https://, no trailing slash.`);
+  fail(`"${args.domain}" should be a bare domain like haulvera.com — no https://, no trailing slash.`);
 }
 
 // Order matters: replace the longer, more specific strings first so a domain
@@ -151,7 +151,7 @@ if (args.domain)  replacements.push(['domain',         CURRENT.domain,  args.dom
 
 if (!replacements.length) fail('Nothing to do — pass at least one of --phone, --email, --packets, --domain.');
 
-console.log(`\n  PK Dispatching setup${args.check ? '  (dry run — nothing will be written)' : ''}\n`);
+console.log(`\n  Haulvera setup${args.check ? '  (dry run — nothing will be written)' : ''}\n`);
 
 let grandTotal = 0;
 const perLabel = new Map();

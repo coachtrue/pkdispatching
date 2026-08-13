@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PK Dispatching — Dispatch Desk (admin CRM)
+   Haulvera — Dispatch Desk (admin CRM)
 
    Shares the site's navy/amber identity, but this is a tool, not a page:
    quieter surfaces, denser type, and status carried by colour + shape so a
@@ -7,22 +7,23 @@
    ========================================================================== */
 
 :root {
-  --navy-900: #06101f;
-  --navy-800: #0b1b33;
-  --navy-700: #122744;
-  --navy-600: #1b3862;
-  --amber-500: #ff9f1c;
-  --amber-400: #ffb547;
+  /* Haulvera palette — Brand Guidelines v1.0 section 03 */
+  --navy-900: #060f1c;
+  --navy-800: #0E1F33;   /* Ink Navy */
+  --navy-700: #16304d;
+  --navy-600: #274866;
+  --amber-500: #F3A73A;  /* Signal Amber — accent only */
+  --amber-400: #f7bd68;
 
-  --ink: #14202e;
-  --ink-soft: #4a5a6e;
+  --ink: #0E1F33;
+  --ink-soft: #445468;   /* Steel */
   --ink-mute: #7688a0;
 
-  --line: #e2e8f0;
-  --line-soft: #eef2f7;
+  --line: #ddd9d0;
+  --line-soft: #eceae3;
   --surface: #ffffff;
-  --surface-alt: #f6f8fb;
-  --surface-tint: #eef3fa;
+  --surface-alt: #f5f4f0;
+  --surface-tint: #ECEAE3;  /* Concrete */
 
   /* Semantic status — deliberately separate from the amber brand accent. */
   --s-new:      #1d68d8;  --s-new-bg:      #e7f0fd;
@@ -35,7 +36,8 @@
   --radius-sm: 8px;
   --shadow: 0 4px 12px rgba(6,16,31,.07), 0 12px 32px rgba(6,16,31,.08);
   --shadow-lg: 0 18px 50px rgba(6,16,31,.22);
-  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-head: Barlow, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -94,11 +96,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border-radius: 16px; padding: 2rem; box-shadow: var(--shadow-lg);
   display: flex; flex-direction: column; gap: .3rem;
 }
-.gate__brand { display: flex; align-items: center; gap: .6rem; font-weight: 750; font-size: 1.15rem; }
-.gate__mark {
-  width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
-  background: var(--navy-800); color: var(--amber-500); font-weight: 800; font-size: .85rem;
-}
+.gate__logo { display: block; width: 190px; height: auto; margin-bottom: .9rem; }
+.gate__brand { font-weight: 750; font-size: 1.05rem; letter-spacing: -.01em; }
+
 .gate__sub { color: var(--ink-mute); font-size: .88rem; margin: .1rem 0 1.2rem; }
 .gate label { font-size: .8rem; font-weight: 700; color: var(--ink-soft); }
 .gate input {
@@ -114,18 +114,19 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .app { display: grid; grid-template-columns: 214px 1fr; min-height: 100vh; }
 
 .side {
-  background: var(--navy-800); color: #b9c9de;
+  background: #0E1F33; color: #b9c9de;
   display: flex; flex-direction: column; padding: 1.1rem .8rem;
   position: sticky; top: 0; height: 100vh;
 }
-.side__brand {
-  display: flex; align-items: center; gap: .55rem; color: #fff;
-  font-weight: 750; font-size: .98rem; padding: 0 .4rem 1.2rem;
+/* Sidebar sits on Ink Navy, so it takes the reversed lockup, whose own ground
+   is the same #0E1F33 and therefore disappears. */
+.side__brand { display: flex; flex-direction: column; gap: .3rem; padding: 0 .4rem 1.2rem; }
+.side__logo { display: block; width: 100%; max-width: 168px; height: auto; }
+.side__sub {
+  color: #8fa4bd; font-size: .7rem; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; padding-left: .1rem;
 }
-.side__mark {
-  width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center;
-  background: var(--navy-700); color: var(--amber-500); font-weight: 800; font-size: .78rem;
-}
+
 .side__nav { display: flex; flex-direction: column; gap: .15rem; }
 .side__link {
   text-align: left; background: none; border: 0; cursor: pointer;

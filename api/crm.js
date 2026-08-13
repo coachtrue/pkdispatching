@@ -1,9 +1,13 @@
 /**
- * POST|GET /api/admin?action=<name> — the CRM back end.
+ * POST|GET /api/crm?action=<name> — the CRM back end.
  *
  * One function with sub-routing rather than a dozen route files: Vercel's
  * Hobby plan caps serverless functions, and these all share auth and the same
  * Supabase client.
+ *
+ * Named crm.js, not admin.js, so it can never collide with the browser-side
+ * admin.js at the project root — a flat upload would silently overwrite one
+ * with the other.
  *
  * Public:
  *   login            exchange the password for a session cookie

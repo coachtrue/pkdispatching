@@ -1,4 +1,4 @@
-/** Shared helpers for the PK Dispatching serverless functions. */
+/** Shared helpers for the Haulvera serverless functions. */
 
 'use strict';
 
@@ -9,7 +9,7 @@ function reference() {
   const stamp = String(now.getFullYear()).slice(2) +
     String(now.getMonth() + 1).padStart(2, '0') +
     String(now.getDate()).padStart(2, '0');
-  return `PK-${stamp}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+  return `HV-${stamp}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 }
 
 async function readJson(req) {
