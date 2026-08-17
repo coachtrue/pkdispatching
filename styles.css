@@ -177,7 +177,7 @@ p  { margin: 0 0 1rem; }
   transition: box-shadow .2s ease;
 }
 .site-header.is-stuck { box-shadow: var(--shadow-sm); }
-.header__inner { display: flex; align-items: center; gap: 1.5rem; min-height: 80px; }
+.header__inner { display: flex; align-items: center; gap: 1.5rem; min-height: 100px; }
 
 /* The lockup is always the supplied artwork — never re-set in type, and never
    recoloured (Brand Guidelines, section 02: DON'TS). Two files ship: the
@@ -185,7 +185,7 @@ p  { margin: 0 0 1rem; }
 .brand { display: inline-flex; align-items: center; flex: none; text-decoration: none; }
 /* Minimum size for the full lockup is 1.25in wide (section 02). At 3.45:1 that
    means ~55px tall before the tagline lines stop reading. */
-.brand__logo { display: block; height: 56px; width: auto; }
+.brand__logo { display: block; height: 92px; width: auto; }
 .brand__logo--reversed { display: none; }
 
 /* Clear space equal to the badge height on all sides (section 02). */
