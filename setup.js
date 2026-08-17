@@ -6,9 +6,9 @@
  * whole project in one pass, so you don't have to hunt through six files.
  *
  *   node setup.js --phone "(214) 555-8890" \
- *                 --email dispatch@pkdispatching.com \
- *                 --packets packets@pkdispatching.com \
- *                 --domain pkdispatching.com
+ *                 --email dispatch@lp3dispatching.com \
+ *                 --packets packets@lp3dispatching.com \
+ *                 --domain lp3dispatching.com
  *
  * Only --phone is required; anything you leave out keeps its current value.
  * Run with --check to see what would change without writing anything.
@@ -41,9 +41,9 @@ const CURRENT = {
   phoneDisplay: '(888) 489-5187',
   phoneE164: '+18884895187',
   phoneDashed: '+1-888-489-5187',
-  email: 'dispatch@pkdispatching.com',
-  packets: 'packets@pkdispatching.com',
-  domain: 'pkdispatching.com'
+  email: 'dispatch@lp3dispatching.com',
+  packets: 'packets@lp3dispatching.com',
+  domain: 'lp3dispatching.com'
 };
 
 /* ------------------------------------------------------------------ *
@@ -134,7 +134,7 @@ const phone = args.phone ? normalizePhone(args.phone) : null;
 if (args.email && !validEmail(args.email)) fail(`"${args.email}" isn't a valid email address.`);
 if (args.packets && !validEmail(args.packets)) fail(`"${args.packets}" isn't a valid email address.`);
 if (args.domain && !validDomain(args.domain)) {
-  fail(`"${args.domain}" should be a bare domain like pkdispatching.com — no https://, no trailing slash.`);
+  fail(`"${args.domain}" should be a bare domain like lp3dispatching.com — no https://, no trailing slash.`);
 }
 
 // Order matters: replace the longer, more specific strings first so a domain

@@ -82,13 +82,13 @@ module.exports = async function handler(req, res) {
       return;
     }
     if (data.length > MAX_FILE_BYTES) {
-      res.status(413).json({ error: 'File is larger than 4 MB. Email it to packets@pkdispatching.com instead.' });
+      res.status(413).json({ error: 'File is larger than 4 MB. Email it to packets@lp3dispatching.com instead.' });
       return;
     }
 
     if (!supabase.isConfigured()) {
       res.status(503).json({
-        error: 'Document storage is not configured yet. Please email your packet to packets@pkdispatching.com.'
+        error: 'Document storage is not configured yet. Please email your packet to packets@lp3dispatching.com.'
       });
       return;
     }

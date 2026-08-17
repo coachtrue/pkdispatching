@@ -365,7 +365,7 @@ const server = http.createServer(async (req, res) => {
     if (!res.headersSent) {
       sendJson(res, err.statusCode || 500, {
         error: err.statusCode === 413
-          ? 'File is larger than 4 MB. Email it to packets@pkdispatching.com instead.'
+          ? 'File is larger than 4 MB. Email it to packets@lp3dispatching.com instead.'
           : 'Server error.'
       });
     }

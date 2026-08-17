@@ -307,9 +307,9 @@ data/
 | Placeholder | Where | Status |
 |---|---|---|
 | `(888) 489-5187` / `+18884895187` | `index.html`, `app.js` | **Still a placeholder** |
-| `dispatch@pkdispatching.com` | `index.html`, `app.js` | **Still a placeholder** |
-| `packets@pkdispatching.com` | `index.html`, `app.js`, `api/upload.js` | **Still a placeholder** |
-| `pkdispatching.com` (canonical + schema) | `index.html` | **Still a placeholder** |
+| `dispatch@lp3dispatching.com` | `index.html`, `app.js` | **Still a placeholder** |
+| `packets@lp3dispatching.com` | `index.html`, `app.js`, `api/upload.js` | **Still a placeholder** |
+| `lp3dispatching.com` (canonical + schema) | `index.html` | **Still a placeholder** |
 | Dispatch fee — **10% of gross, single rate** | `index.html` → `#pricing` | ✅ Confirmed |
 | Terms of Service / Privacy Policy | `app.js` → `MODAL_CONTENT` | Draft — have counsel review |
 
@@ -376,8 +376,8 @@ var CONFIG = {
   leadEndpoint: '/api/leads',
   onboardEndpoint: '/api/onboarding',
   uploadEndpoint: '/api/upload',
-  fallbackEmail: 'dispatch@pkdispatching.com',
-  packetEmail: 'packets@pkdispatching.com',
+  fallbackEmail: 'dispatch@lp3dispatching.com',
+  packetEmail: 'packets@lp3dispatching.com',
   phone: '(888) 489-5187',
   maxFileBytes: 4 * 1024 * 1024,
   allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'heic', 'doc', 'docx', 'webp']

@@ -21,8 +21,8 @@
     // at ~4.5 MB — a whole packet in one request would be rejected.
     uploadEndpoint: '/api/upload',
     // Used when an endpoint is unavailable or not configured.
-    fallbackEmail: 'dispatch@pkdispatching.com',
-    packetEmail: 'packets@pkdispatching.com',
+    fallbackEmail: 'dispatch@lp3dispatching.com',
+    packetEmail: 'packets@lp3dispatching.com',
     phone: '(888) 489-5187',
     maxFileBytes: 4 * 1024 * 1024, // 4 MB per file — keeps each upload under the cap
     allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'heic', 'doc', 'docx', 'webp']
